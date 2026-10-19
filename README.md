@@ -27,13 +27,10 @@ packages/
 ## Run it
 
 ```bash
-# API
-cd apps/api && cp .env.example .env   # add ANTHROPIC_API_KEY, CLERK_SECRET_KEY
-npm install && npm run dev            # http://localhost:8787
-
-# Web
-cd apps/web && cp .env.example .env    # add NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY, NEXT_PUBLIC_API_URL
-npm install && npm run dev
+cp .env.example .env        # fill ANTHROPIC_API_KEY, GOOGLE_PLACES_API_KEY, APIFY_TOKEN, Clerk keys
+npm install
+npm run dev:api             # http://localhost:8787
+npm run dev:web             # http://localhost:3000 (apps/web)
 ```
 
 ## API
@@ -42,13 +39,43 @@ All routes under `/api` need a Clerk bearer token. Without `CLERK_SECRET_KEY` se
 
 | Method | Route | What it does |
 |---|---|---|
-| POST | `/api/clinics` | Save the owner's clinic profile (name, type, address, city, services, prices, notes) |
+| POST | `/api/clinics` | Save the owner's clinic (name, address, city, disciplines, services, website, opened) |
 | GET | `/api/clinics` | List the owner's clinics |
-| GET | `/api/clinics/:id` | Clinic + stored competitors + past consultations |
-| POST | `/api/clinics/:id/analyze` | Run the Claude agent: web-search competitors, write the consultation, store everything in SurrealDB. 1–3 min. |
-| POST | `/api/clinics/:id/chat` | Follow-up question to the consultant. Remembers prior turns per clinic. |
+| GET | `/api/clinics/:id` | Clinic + its analyses |
+| POST | `/api/clinics/:id/analyses` | Start the quick scan (finds the Google listing, reads the website, previews the market). Returns 202; poll the analysis. |
+| GET | `/api/clinics/:id/analyses/:aid` | Analysis with `stage`, `status` and per-phase progress |
+| POST | `/api/clinics/:id/analyses/:aid/services` | Checkpoint 1: confirm services, moves the analysis to discovery |
+| POST | `/api/clinics/:id/analyses/:aid/retry` | Retry a failed quick scan |
 
-Try the agent from the terminal without the app: `cd apps/api && npm run demo` (uses roughly $0.50–$1.50 of Anthropic credit).
+Analysis `status` values: `queued`, `running`, `awaiting_services`, `awaiting_competitors`, `succeeded`, `failed`. `stage` is `quick_scan`, `discovery` or `deep`.
+
+### Mock endpoints for the web app
+
+No auth, fixture data from `packages/contracts/src/fixtures`. Use these while the pipeline is being finished:
+
+```
+GET /api/mock/clinics
+GET /api/mock/clinics/:id                 -> { clinic, analyses }
+GET /api/mock/clinics/:id/analyses/:aid   -> Analysis (succeeded, all phases done)
+GET /api/mock/clinics/:id/report          -> Report (scorecard, competitors, findings, recommendations, ledger, diff)
+GET /api/mock/clinics/:id/chat            -> ChatMessage[]
+```
+
+In the web app, import types and fixtures directly:
+
+```ts
+import type { Report, Finding } from "@clinix/contracts";
+import { fixtureReport } from "@clinix/contracts/fixtures";
+```
+
+## Development
+
+```bash
+npm install                 # once, at the repo root (npm workspaces)
+npm run typecheck           # all packages
+npm test                    # all packages
+npm run dev:api             # http://localhost:8787
+```
 
 ## Team
 

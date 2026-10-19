@@ -1,0 +1,7 @@
+From the notes below about a {discipline} clinic, fill the structure exactly.
+- services: concrete services a patient would search for (e.g. "teeth whitening", not "quality care").
+- specializations: narrower focuses (pediatric, sports injuries, clear aligners).
+- languages: languages spoken, as written. Include "English" if the site is in English.
+- positioning: one sentence on how the clinic presents itself.
+- nicheTermsByService: for each service, 2-4 phrases a patient would type into Google for it.
+Use empty lists when the notes say nothing.
