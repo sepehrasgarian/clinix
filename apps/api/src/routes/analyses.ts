@@ -69,6 +69,7 @@ export function analysesRoutes(deps: PipelineDeps, run: StageRunners = stageRunn
       await saveDiscovery(analysis.id, { ...analysis.discovery, selectedPlaceIds: body.data.placeIds });
       const moved = await transition(analysis.id, "awaiting_competitors", { status: "queued", stage: "deep" });
       if (!moved) return c.json({ error: "analysis changed, reload" }, 409);
+      void run.deep(analysis.id, deps);
       return c.json(moved, 202);
     })
     // The owner adds a competitor we missed, by name. It joins the candidate list as "strong".

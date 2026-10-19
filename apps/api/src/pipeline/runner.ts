@@ -1,9 +1,10 @@
 import type { AnalysisStage, PhaseId } from "@clinix/contracts";
-import { getAnalysis, saveDiscovery, saveScan, setPhase, transition } from "../db/analyses.js";
+import { getAnalysis, saveDiscovery, saveReport, saveScan, setPhase, transition } from "../db/analyses.js";
 import { getClinicById, updateClinic } from "../db/clinics.js";
 import { humanizeError } from "../lib/errors.js";
 import { nowIso } from "../lib/ids.js";
 import type { PipelineDeps } from "./deps.js";
+import { runDeepAnalysis } from "./deep.js";
 import { runDiscovery } from "./discover.js";
 import { runQuickScan } from "./quickScan.js";
 
@@ -11,6 +12,7 @@ import { runQuickScan } from "./quickScan.js";
 export type StageRunners = {
   quickScan: (analysisId: string, deps: PipelineDeps) => Promise<void>;
   discovery: (analysisId: string, deps: PipelineDeps) => Promise<void>;
+  deep: (analysisId: string, deps: PipelineDeps) => Promise<void>;
 };
 
 /**
@@ -83,4 +85,24 @@ export async function startDiscovery(analysisId: string, deps: PipelineDeps): Pr
   }
 }
 
-export const stageRunners: StageRunners = { quickScan: startQuickScan, discovery: startDiscovery };
+/** Stage 3: reviews, mining with verification, and the plan. Ends in a report. */
+export async function startDeep(analysisId: string, deps: PipelineDeps): Promise<void> {
+  const claimed = await claimStage(analysisId, "deep");
+  if (!claimed) return;
+
+  const clinic = await getClinicById(claimed.clinicId);
+  if (!clinic) {
+    await transition(analysisId, "running", { status: "failed", error: "Clinic not found." });
+    return;
+  }
+
+  try {
+    const report = await runDeepAnalysis(clinic, claimed, deps, { onPhase: (phase, fn) => trackPhase(analysisId, phase, fn) });
+    await saveReport(analysisId, report);
+    await transition(analysisId, "running", { status: "succeeded" });
+  } catch (err) {
+    await transition(analysisId, "running", { status: "failed", error: humanizeError(err) });
+  }
+}
+
+export const stageRunners: StageRunners = { quickScan: startQuickScan, discovery: startDiscovery, deep: startDeep };

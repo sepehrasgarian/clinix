@@ -8,7 +8,7 @@ import type { Place } from "@clinix/contracts";
 
 const extraPlace: Place = { placeId: "p_added", name: "Added Dental", address: "1 Yonge St", lat: 43.79, lng: -79.41, rating: 4.4, reviewCount: 50, types: ["dentist"], sampleReviews: [] };
 const deps = { places: { searchText: vi.fn(async () => [extraPlace]) }, ai: {} } as unknown as PipelineDeps;
-const run = { quickScan: vi.fn(async () => {}), discovery: vi.fn(async () => {}) };
+const run = { quickScan: vi.fn(async () => {}), discovery: vi.fn(async () => {}), deep: vi.fn(async () => {}) };
 const app = createApp({ deps, run });
 const auth = { "x-user-id": "user_1", "content-type": "application/json" };
 const clinicBody = { name: "Finch East Family Dental", address: "77 Finch Ave E", city: "Toronto", disciplines: ["dentistry"], services: ["cleaning"] };
@@ -109,6 +109,7 @@ describe("API routes", () => {
     const after = await getAnalysis(a.id);
     expect(after).toMatchObject({ stage: "deep", status: "queued" });
     expect(after?.discovery?.selectedPlaceIds).toEqual(["place_yonge_smile", "place_willowdale"]);
+    expect(run.deep).toHaveBeenCalledWith(a.id, deps);
   });
 
   it("rejects competitor confirmation outside the checkpoint", async () => {

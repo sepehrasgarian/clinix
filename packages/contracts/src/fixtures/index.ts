@@ -274,6 +274,7 @@ export const fixtureReport: Report = {
       status: "todo",
     },
   ],
+  reviews: fixtureReviews,
   ledger: {
     proposed: 8,
     kept: 6,

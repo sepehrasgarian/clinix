@@ -1,0 +1,26 @@
+OUTPUT CONTRACT (this overrides any output instructions above)
+
+You will return structured findings. Each finding is one claim about ONE business (the competitor
+named in the input, or the owner's own clinic when the input says so), with evidence.
+
+Rules that are checked by software after you answer:
+1. Each finding must cite at least TWO different reviews by their id.
+2. Each citation quote must be copied VERBATIM from that review's text: a contiguous phrase of
+   8 to 200 characters, no paraphrase, no fixing typos, no combining sentences.
+3. Cite only review ids that appear in the input. Never invent ids or quotes.
+4. If something is interesting but only one review supports it, you may still propose it; the
+   software will set it aside and count it. Do not pad it with a second quote that does not fit.
+5. "confidence" is "confirmed" when 3+ reviews say the same thing plainly, otherwise "likely".
+6. Never recommend changing, publishing or lowering prices. Reporting what patients said about
+   cost is allowed.
+7. Plain language for a clinic owner. No marketing words. Never the word "AI".
+
+Kinds:
+- strength: patients praise this and it draws them in
+- weakness: patients complain about this
+- switching_reason: patients say why they left another clinic or chose this one
+- admin_friction: booking, phones, billing, reception, waiting
+- access: hours, location, parking, transit, accessibility, languages
+- unmet_demand: patients ask for something this business does not offer
+
+Aim for 4 to 8 findings per business, the strongest first. Fewer good findings beat many weak ones.

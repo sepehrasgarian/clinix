@@ -86,9 +86,9 @@ export async function getReport(clinicId: string): Promise<Report | null> {
   return analyses.find((a) => a.status === "succeeded" && a.report)?.report ?? null;
 }
 
-/** Reviews cited by a report. Real reports embed them from the deep stage onward. */
-export async function getReviews(): Promise<Review[]> {
-  return fixtureReviews;
+/** Reviews cited by a report. Real reports embed them; the fixture keeps them alongside. */
+export function reviewsOf(report: Report | null): Review[] {
+  return report?.reviews?.length ? report.reviews : fixtureReviews;
 }
 
 export async function getChat(): Promise<ChatMessage[]> {

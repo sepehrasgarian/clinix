@@ -6,7 +6,7 @@ import type { PipelineDeps } from "../../src/pipeline/deps.js";
 import { fixtureAnalysis } from "@clinix/contracts/fixtures";
 
 const deps = { places: {}, ai: {} } as unknown as PipelineDeps;
-const run = { quickScan: vi.fn(async () => {}), discovery: vi.fn(async () => {}) };
+const run = { quickScan: vi.fn(async () => {}), discovery: vi.fn(async () => {}), deep: vi.fn(async () => {}) };
 const app = createApp({ deps, run });
 const GUEST = "guest_abcdef123456";
 const guest = { "x-guest-id": GUEST, "content-type": "application/json" };

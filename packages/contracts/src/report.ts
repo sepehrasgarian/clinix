@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { Discipline, Id, IsoDate } from "./common";
+import { Review } from "./place";
 
 export const ReviewCitation = z.object({
   reviewId: Id,
@@ -116,5 +117,7 @@ export const Report = z.object({
   ledger: EvidenceLedger,
   diff: RunDiff.optional(),
   thinReport: z.boolean(),
+  /** Every review cited by a finding, so the report is self-contained. */
+  reviews: z.array(Review).default([]),
 });
 export type Report = z.infer<typeof Report>;

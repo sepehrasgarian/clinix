@@ -45,11 +45,15 @@ All routes under `/api` need a Clerk bearer token. Without `CLERK_SECRET_KEY` se
 | POST | `/api/clinics/:id/analyses` | Start the quick scan (finds the Google listing, reads the website, previews the market). Returns 202; poll the analysis. |
 | GET | `/api/clinics/:id/analyses/:aid` | Analysis with `stage`, `status` and per-phase progress |
 | POST | `/api/clinics/:id/analyses/:aid/services` | Checkpoint 1: confirm services; starts competitor discovery (returns 202) |
-| POST | `/api/clinics/:id/analyses/:aid/competitors` | Checkpoint 2: confirm up to 5 competitors per discipline; queues the deep analysis |
+| POST | `/api/clinics/:id/analyses/:aid/competitors` | Checkpoint 2: confirm up to 5 competitors per discipline; starts the deep analysis (reviews, findings with verified citations, scorecard, action plan). The report lands on the analysis. |
 | POST | `/api/clinics/:id/analyses/:aid/competitors/add` | Add a competitor we missed, by name |
 | POST | `/api/clinics/:id/analyses/:aid/retry` | Retry a failed quick scan |
 | GET | `/api/lookup/clinic-search?q=&city=` | Google listings matching a clinic name, for onboarding |
 | GET | `/api/lookup/photo/:name` | Listing photo proxy (the Google key never reaches the browser) |
+
+### How a finding earns its place
+
+Every finding the model proposes is checked in code before it reaches the report: each citation must quote a stored review verbatim, and a finding needs quotes from at least two distinct reviews. Findings that fail are kept as "set aside" with the reason, and the report's evidence ledger counts them. Reviewer names and photos are never stored.
 
 Analysis `status` values: `queued`, `running`, `awaiting_services`, `awaiting_competitors`, `succeeded`, `failed`. `stage` is `quick_scan`, `discovery` or `deep`.
 

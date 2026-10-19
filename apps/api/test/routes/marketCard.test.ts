@@ -13,7 +13,7 @@ const deps = {
   },
   ai: {},
 } as unknown as PipelineDeps;
-const app = createApp({ deps, run: { quickScan: vi.fn(), discovery: vi.fn() } });
+const app = createApp({ deps, run: { quickScan: vi.fn(), discovery: vi.fn(), deep: vi.fn() } });
 const guest = { "x-guest-id": "guest_abcdef123456" };
 
 describe("GET /api/lookup/market-card", () => {
