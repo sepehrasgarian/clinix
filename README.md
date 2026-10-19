@@ -1,8 +1,8 @@
 # Clinix
 
-**AI competitive-intelligence consultant for clinic owners.** Built for [Build North: Ship Something Real](https://luma.com/build-north) (Oct 16–25, 2026).
+**Competitor analysis for clinics, turned into a ranked action plan.**
 
-Tell Clinix where your clinic is and what you offer. It finds the competing clinics around you, compares services, pricing, reviews and hours, remembers everything across sessions, and gives you a concrete consultation on how to win more patients.
+Tell Clinix where your clinic is and what you offer. It finds the competing clinics around you, reads what their patients say, compares you on the things patients notice, and gives you a ranked plan where every item is backed by real reviews.
 
 ## Stack
 
