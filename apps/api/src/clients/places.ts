@@ -19,6 +19,7 @@ const SEARCH_FIELDS = [
   "places.types",
   "places.primaryType",
   "places.regularOpeningHours.weekdayDescriptions",
+  "places.photos.name",
 ].join(",");
 
 const DETAIL_FIELDS = [
@@ -33,6 +34,7 @@ const DETAIL_FIELDS = [
   "types",
   "primaryType",
   "regularOpeningHours.weekdayDescriptions",
+  "photos.name",
   "reviews",
 ].join(",");
 
@@ -48,6 +50,7 @@ type RawPlace = {
   types?: string[];
   primaryType?: string;
   regularOpeningHours?: { weekdayDescriptions?: string[] };
+  photos?: { name: string }[];
   reviews?: { rating?: number; text?: { text?: string }; publishTime?: string }[];
 };
 
@@ -79,6 +82,15 @@ export class PlacesClient {
     if (!res.ok) throw new Error(`Places search failed with ${res.status}`);
     const data = (await res.json()) as { places?: RawPlace[] };
     return (data.places ?? []).map(toPlace);
+  }
+
+  /** Streams a listing photo. The browser never sees the API key; the API proxies the bytes. */
+  async photo(photoName: string, maxWidthPx = 480): Promise<{ bytes: ArrayBuffer; contentType: string } | null> {
+    const url = `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=${maxWidthPx}&key=${this.apiKey}`;
+    const res = await this.fetchImpl(url);
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error(`Place photo failed with ${res.status}`);
+    return { bytes: await res.arrayBuffer(), contentType: res.headers.get("content-type") ?? "image/jpeg" };
   }
 
   async details(placeId: string): Promise<Place | null> {
@@ -114,6 +126,7 @@ export function toPlace(raw: RawPlace): Place {
     phone: raw.nationalPhoneNumber,
     types: [...new Set([raw.primaryType, ...(raw.types ?? [])].filter(Boolean))] as string[],
     hours: raw.regularOpeningHours?.weekdayDescriptions,
+    photoName: raw.photos?.[0]?.name,
     sampleReviews,
   });
 }

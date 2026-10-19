@@ -34,3 +34,14 @@ export async function updateClinic(id: string, patch: Partial<ClinicInput> & { p
   const row = await db.update(rid("clinic", id)).merge(patch);
   return Clinic.parse(toPlain(row));
 }
+
+/** Moves a guest's clinic to a signed-in owner. Compare-and-set on the current owner. */
+export async function transferClinic(id: string, fromOwnerId: string, toOwnerId: string): Promise<Clinic | null> {
+  const db = await getDb();
+  const [rows] = await db.query<[unknown[]]>("UPDATE $id SET ownerId = $to WHERE ownerId = $from RETURN AFTER", {
+    id: rid("clinic", id),
+    from: fromOwnerId,
+    to: toOwnerId,
+  });
+  return rows.length ? Clinic.parse(toPlain(rows[0])) : null;
+}

@@ -1,12 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "../../src/app.js";
 import { resetDbForTests } from "../../src/db/connection.js";
-import { getAnalysis, saveScan, transition } from "../../src/db/analyses.js";
+import { getAnalysis, saveDiscovery, saveScan, transition } from "../../src/db/analyses.js";
 import type { PipelineDeps } from "../../src/pipeline/deps.js";
 import { fixtureAnalysis } from "@clinix/contracts/fixtures";
+import type { Place } from "@clinix/contracts";
 
-const deps = { places: {}, ai: {} } as unknown as PipelineDeps;
-const run = vi.fn(async () => {});
+const extraPlace: Place = { placeId: "p_added", name: "Added Dental", address: "1 Yonge St", lat: 43.79, lng: -79.41, rating: 4.4, reviewCount: 50, types: ["dentist"], sampleReviews: [] };
+const deps = { places: { searchText: vi.fn(async () => [extraPlace]) }, ai: {} } as unknown as PipelineDeps;
+const run = { quickScan: vi.fn(async () => {}), discovery: vi.fn(async () => {}) };
 const app = createApp({ deps, run });
 const auth = { "x-user-id": "user_1", "content-type": "application/json" };
 const clinicBody = { name: "Finch East Family Dental", address: "77 Finch Ave E", city: "Toronto", disciplines: ["dentistry"], services: ["cleaning"] };
@@ -19,7 +21,8 @@ async function makeClinic() {
 describe("API routes", () => {
   beforeEach(async () => {
     await resetDbForTests();
-    run.mockClear();
+    run.quickScan.mockClear();
+    run.discovery.mockClear();
   });
 
   it("health and mock endpoints need no auth", async () => {
@@ -51,11 +54,11 @@ describe("API routes", () => {
     const first = await app.request(`/api/clinics/${clinic.id}/analyses`, { method: "POST", headers: auth });
     expect(first.status).toBe(202);
     const a = (await first.json()) as { id: string };
-    expect(run).toHaveBeenCalledWith(a.id, deps);
+    expect(run.quickScan).toHaveBeenCalledWith(a.id, deps);
     const second = await app.request(`/api/clinics/${clinic.id}/analyses`, { method: "POST", headers: auth });
     expect(second.status).toBe(200);
     expect(((await second.json()) as { id: string }).id).toBe(a.id);
-    expect(run).toHaveBeenCalledTimes(1);
+    expect(run.quickScan).toHaveBeenCalledTimes(1);
   });
 
   it("confirms services only at the awaiting_services checkpoint and moves to discovery", async () => {
@@ -68,9 +71,10 @@ describe("API routes", () => {
     await saveScan(a.id, fixtureAnalysis.scan!);
     await transition(a.id, "running", { status: "awaiting_services" });
     const ok = await app.request(`/api/clinics/${clinic.id}/analyses/${a.id}/services`, { method: "POST", headers: auth, body: JSON.stringify({ services: ["cleaning", "Invisalign"] }) });
-    expect(ok.status).toBe(200);
+    expect(ok.status).toBe(202);
     const after = await getAnalysis(a.id);
     expect(after).toMatchObject({ stage: "discovery", status: "queued" });
+    expect(run.discovery).toHaveBeenCalledWith(a.id, deps);
     const clinicAfter = await (await app.request(`/api/clinics/${clinic.id}`, { headers: auth })).json() as { clinic: { services: string[] } };
     expect(clinicAfter.clinic.services).toEqual(["cleaning", "Invisalign"]);
   });
@@ -83,7 +87,45 @@ describe("API routes", () => {
     const res = await app.request(`/api/clinics/${clinic.id}/analyses/${a.id}/retry`, { method: "POST", headers: auth });
     expect(res.status).toBe(202);
     expect((await getAnalysis(a.id))?.status).toBe("queued");
-    expect(run).toHaveBeenCalledTimes(2);
+    expect(run.quickScan).toHaveBeenCalledTimes(2);
+  });
+
+  async function awaitingCompetitors() {
+    const clinic = await makeClinic();
+    const a = (await (await app.request(`/api/clinics/${clinic.id}/analyses`, { method: "POST", headers: auth })).json()) as { id: string };
+    await transition(a.id, "queued", { status: "queued", stage: "discovery" });
+    await transition(a.id, "queued", { status: "running" });
+    await saveDiscovery(a.id, fixtureAnalysis.discovery!);
+    await transition(a.id, "running", { status: "awaiting_competitors" });
+    return { clinic, a };
+  }
+
+  it("confirms competitors: validates the selection and moves to the deep stage", async () => {
+    const { clinic, a } = await awaitingCompetitors();
+    const bad = await app.request(`/api/clinics/${clinic.id}/analyses/${a.id}/competitors`, { method: "POST", headers: auth, body: JSON.stringify({ placeIds: ["nope"] }) });
+    expect(bad.status).toBe(400);
+    const ok = await app.request(`/api/clinics/${clinic.id}/analyses/${a.id}/competitors`, { method: "POST", headers: auth, body: JSON.stringify({ placeIds: ["place_yonge_smile", "place_willowdale"] }) });
+    expect(ok.status).toBe(202);
+    const after = await getAnalysis(a.id);
+    expect(after).toMatchObject({ stage: "deep", status: "queued" });
+    expect(after?.discovery?.selectedPlaceIds).toEqual(["place_yonge_smile", "place_willowdale"]);
+  });
+
+  it("rejects competitor confirmation outside the checkpoint", async () => {
+    const clinic = await makeClinic();
+    const a = (await (await app.request(`/api/clinics/${clinic.id}/analyses`, { method: "POST", headers: auth })).json()) as { id: string };
+    const res = await app.request(`/api/clinics/${clinic.id}/analyses/${a.id}/competitors`, { method: "POST", headers: auth, body: JSON.stringify({ placeIds: ["x"] }) });
+    expect(res.status).toBe(409);
+  });
+
+  it("lets the owner add a missed competitor by name", async () => {
+    const { clinic, a } = await awaitingCompetitors();
+    const res = await app.request(`/api/clinics/${clinic.id}/analyses/${a.id}/competitors/add`, { method: "POST", headers: auth, body: JSON.stringify({ query: "Added Dental" }) });
+    expect(res.status).toBe(201);
+    const body = (await res.json()) as { candidates: { place: { placeId: string }; flag: string }[] };
+    expect(body.candidates[0]).toMatchObject({ place: { placeId: "p_added" }, flag: "strong" });
+    const again = await app.request(`/api/clinics/${clinic.id}/analyses/${a.id}/competitors/add`, { method: "POST", headers: auth, body: JSON.stringify({ query: "Added Dental" }) });
+    expect(again.status).toBe(200);
   });
 
   it("hides another owner's analysis", async () => {

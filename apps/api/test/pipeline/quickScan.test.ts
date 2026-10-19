@@ -46,9 +46,10 @@ describe("enrich", () => {
     const deps = fakeDeps({ places: { geocode: vi.fn(async () => null) } });
     await expect(enrich(clinic, deps)).rejects.toThrow(/Geocoding/);
   });
-  it("fails when the matched listing is not a clinic", async () => {
+  it("fails when the matched listing is not a clinic, unless the owner confirmed it", async () => {
     const deps = fakeDeps({ places: { searchText: vi.fn(async () => [{ ...own, types: ["pharmacy"] }]) } });
     await expect(enrich(clinic, deps)).rejects.toThrow(/not a clinic/);
+    await expect(enrich({ ...clinic, businessTypeConfirmed: true }, deps)).resolves.toBeDefined();
   });
   it("fails when the listing is far from the address", async () => {
     const deps = fakeDeps({ places: { searchText: vi.fn(async () => [{ ...own, lat: 45.5 }]) } });
@@ -79,6 +80,11 @@ describe("marketPreview", () => {
     expect(counts).toEqual([{ service: "cleaning", count: 2 }, { service: "Invisalign", count: 2 }]);
     expect(stats.leaderReviewCount).toBe(310);
     expect(stats.averageRating).toBeCloseTo(4.5, 5);
+  });
+  it("ignores businesses of another kind when computing the leader", async () => {
+    const deps = fakeDeps({ places: { searchText: vi.fn(async () => [peer("p_a", 4.8, 310), { ...peer("p_diag", 4.9, 2378), types: ["diagnostic_center", "health"] }]) } });
+    const { stats } = await marketPreview(clinic, own, ["cleaning"], deps);
+    expect(stats.leaderReviewCount).toBe(310);
   });
 });
 

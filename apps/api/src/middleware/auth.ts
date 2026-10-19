@@ -2,28 +2,44 @@ import { verifyToken } from "@clerk/backend";
 import type { Context, Next } from "hono";
 import { env } from "../env.js";
 
-export type AuthVariables = { userId: string; orgId?: string };
+export type AuthVariables = { userId: string; orgId?: string; isGuest: boolean };
+
+/** Browsers mint one of these before any account exists; the free first look runs under it. */
+export const GUEST_ID = /^guest_[a-z0-9]{12,40}$/;
 
 /**
- * Verifies the Clerk session token from `Authorization: Bearer <token>`.
- * Without CLERK_SECRET_KEY (local dev and tests) it accepts an `x-user-id` header instead.
+ * Identifies the caller. In order: a Clerk bearer token (when CLERK_SECRET_KEY is set), the
+ * dev `x-user-id` header (when it is not), or a guest id from `x-guest-id`. Guests can run
+ * the free first look only; routes that need an account check `isGuest`.
  */
 export function requireUser(secretKey: string | undefined = env.CLERK_SECRET_KEY) {
   return async (c: Context<{ Variables: AuthVariables }>, next: Next) => {
-    if (!secretKey) {
-      const devUser = c.req.header("x-user-id");
-      if (!devUser) return c.json({ error: "missing x-user-id header (dev mode)" }, 401);
-      c.set("userId", devUser);
-      const org = c.req.header("x-org-id");
-      if (org) c.set("orgId", org);
-      return next();
-    }
+    const guest = c.req.header("x-guest-id");
     const header = c.req.header("authorization");
     const token = header?.startsWith("Bearer ") ? header.slice(7) : undefined;
+
+    if (!secretKey) {
+      const devUser = c.req.header("x-user-id");
+      if (devUser) {
+        c.set("userId", devUser);
+        c.set("isGuest", false);
+        const org = c.req.header("x-org-id");
+        if (org) c.set("orgId", org);
+        return next();
+      }
+    }
+    if (!token && guest) {
+      if (!GUEST_ID.test(guest)) return c.json({ error: "invalid guest id" }, 401);
+      c.set("userId", guest);
+      c.set("isGuest", true);
+      return next();
+    }
+    if (!secretKey) return c.json({ error: "missing x-user-id or x-guest-id header (dev mode)" }, 401);
     if (!token) return c.json({ error: "missing bearer token" }, 401);
     try {
       const claims = await verifyToken(token, { secretKey });
       c.set("userId", claims.sub);
+      c.set("isGuest", false);
       const orgId = (claims as { org_id?: string }).org_id;
       if (orgId) c.set("orgId", orgId);
       return next();

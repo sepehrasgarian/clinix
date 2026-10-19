@@ -1,8 +1,11 @@
 import { Hono } from "hono";
+import { z } from "zod";
 import { ClinicInput } from "@clinix/contracts";
-import { createClinic, getClinic, listClinics } from "../db/clinics.js";
+import { createClinic, getClinic, getClinicById, listClinics, transferClinic } from "../db/clinics.js";
 import { listAnalyses } from "../db/analyses.js";
-import type { AuthVariables } from "../middleware/auth.js";
+import { GUEST_ID, type AuthVariables } from "../middleware/auth.js";
+
+const ClaimBody = z.object({ guestId: z.string().regex(GUEST_ID) });
 
 export const clinics = new Hono<{ Variables: AuthVariables }>()
   .get("/", async (c) => c.json(await listClinics(c.get("userId"))))
@@ -16,4 +19,16 @@ export const clinics = new Hono<{ Variables: AuthVariables }>()
     const clinic = await getClinic(c.req.param("id"), c.get("userId"));
     if (!clinic) return c.json({ error: "not found" }, 404);
     return c.json({ clinic, analyses: await listAnalyses(clinic.id) });
+  })
+  // A signed-in owner takes over the clinic they set up as a guest.
+  .post("/:id/claim", async (c) => {
+    if (c.get("isGuest")) return c.json({ error: "sign in to claim a clinic", code: "auth_required" }, 401);
+    const body = ClaimBody.safeParse(await c.req.json().catch(() => null));
+    if (!body.success) return c.json({ error: "guestId required" }, 400);
+    const existing = await getClinicById(c.req.param("id"));
+    if (!existing) return c.json({ error: "not found" }, 404);
+    if (existing.ownerId === c.get("userId")) return c.json(existing);
+    const moved = await transferClinic(existing.id, body.data.guestId, c.get("userId"));
+    if (!moved) return c.json({ error: "this clinic belongs to someone else" }, 403);
+    return c.json(moved);
   });

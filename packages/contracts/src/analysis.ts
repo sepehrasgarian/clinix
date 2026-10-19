@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { Discipline, Id, IsoDate } from "./common.js";
-import { Place } from "./place.js";
-import { Report } from "./report.js";
+import { Discipline, Id, IsoDate } from "./common";
+import { Place } from "./place";
+import { Report } from "./report";
 
 export const AnalysisStage = z.enum(["quick_scan", "discovery", "deep"]);
 export type AnalysisStage = z.infer<typeof AnalysisStage>;

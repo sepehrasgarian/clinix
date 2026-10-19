@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { Analysis, Clinic, ChatMessage, Report, Review } from "../src/index.js";
-import { fixtureAnalysis, fixtureClinic, fixtureChat, fixtureReport, fixtureReviews } from "../src/fixtures/index.js";
+import { Analysis, Clinic, ChatMessage, Report, Review } from "../src/index";
+import { fixtureAnalysis, fixtureClinic, fixtureChat, fixtureReport, fixtureReviews } from "../src/fixtures/index";
 
 describe("fixtures conform to the contracts", () => {
   it("clinic", () => expect(() => Clinic.parse(fixtureClinic)).not.toThrow());

@@ -12,6 +12,7 @@ const rawPlace = {
   types: ["dentist", "health", "point_of_interest"],
   primaryType: "dentist",
   regularOpeningHours: { weekdayDescriptions: ["Monday: 9 AM – 6 PM"] },
+  photos: [{ name: "places/ChIJabc/photos/xyz", authorAttributions: [{ displayName: "Someone" }] }],
   reviews: [
     { rating: 5, text: { text: "Booked online, open Saturdays." }, publishTime: "2026-09-14T03:12:00Z", authorAttribution: { displayName: "Jane Doe", photoUri: "x" } },
     { rating: 4, text: {}, publishTime: "2026-09-01T00:00:00Z" },
@@ -28,6 +29,8 @@ describe("toPlace", () => {
     expect(place.sampleReviews).toHaveLength(1);
     expect(JSON.stringify(place)).not.toContain("Jane Doe");
     expect(place.sampleReviews[0]).toMatchObject({ source: "places", rating: 5, placeId: "ChIJabc" });
+    expect(place.photoName).toBe("places/ChIJabc/photos/xyz");
+    expect(JSON.stringify(place)).not.toContain("Someone");
   });
 });
 

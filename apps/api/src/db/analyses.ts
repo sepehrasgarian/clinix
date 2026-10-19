@@ -36,6 +36,34 @@ export async function createAnalysis(clinicId: string): Promise<Analysis> {
   return Analysis.parse(toPlain(row));
 }
 
+/** A finished quick scan from the last `maxAgeDays`, so a repeat visit does not pay for a new one. */
+export async function reusableScan(clinicId: string, maxAgeDays = 30): Promise<ScanResult | null> {
+  const db = await getDb();
+  const since = new Date(Date.now() - maxAgeDays * 24 * 3600 * 1000).toISOString();
+  const [rows] = await db.query<[unknown[]]>(
+    "SELECT * FROM analysis WHERE clinicId = $clinicId AND scan != NONE AND createdAt >= $since ORDER BY createdAt DESC LIMIT 1",
+    { clinicId, since },
+  );
+  return rows.length ? Analysis.parse(toPlain(rows[0])).scan ?? null : null;
+}
+
+/** A new analysis that starts at the services checkpoint with a copied scan: all quick-scan phases already done. */
+export async function createAnalysisFromScan(clinicId: string, scan: ScanResult): Promise<Analysis> {
+  const db = await getDb();
+  const id = newId("analysis");
+  const now = nowIso();
+  const row = await db.create(rid("analysis", id)).content({
+    clinicId,
+    stage: "quick_scan",
+    status: "awaiting_services",
+    phases: phasesFor("quick_scan").map((p) => ({ ...p, status: "done", startedAt: now, finishedAt: now })),
+    scan,
+    createdAt: now,
+    updatedAt: now,
+  });
+  return Analysis.parse(toPlain(row));
+}
+
 export async function getAnalysis(id: string): Promise<Analysis | null> {
   const db = await getDb();
   const row = await db.select(rid("analysis", id));

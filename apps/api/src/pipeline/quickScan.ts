@@ -1,6 +1,7 @@
 import { DISCIPLINE_LABELS, Understanding, type Clinic, type Place, type ScanResult } from "@clinix/contracts";
 import { classifyBusiness } from "../clients/places.js";
 import { distanceKm } from "../lib/geo.js";
+import { matchesDisciplines } from "../lib/disciplineTypes.js";
 import { buildScanHints, isNewClinic, type MarketStats } from "../lib/hints.js";
 import { understandExtractPrompt, understandQuestion, understandSystem } from "../prompts/understand.js";
 import type { PipelineDeps } from "./deps.js";
@@ -27,7 +28,7 @@ export async function enrich(clinic: Clinic, deps: PipelineDeps): Promise<Place>
 
   const km = distanceKm(geo.location, { lat: place.lat, lng: place.lng });
   if (km > MAX_LISTING_DISTANCE_KM) throw new Error(`The matched listing is ${km.toFixed(0)} km from the address.`);
-  if (classifyBusiness(place.types) === "non_clinic") throw new Error("The matched listing is not a clinic.");
+  if (classifyBusiness(place.types) === "non_clinic" && !clinic.businessTypeConfirmed) throw new Error("The matched listing is not a clinic.");
 
   const details = await deps.places.details(place.placeId);
   return details ?? place;
@@ -61,7 +62,9 @@ export async function marketPreview(clinic: Clinic, place: Place, services: stri
 
   for (const service of services.slice(0, 6)) {
     const found = await deps.places.searchText(`${service} ${clinic.city}`, { near: center, radiusM: MARKET_RADIUS_M, max: 20 });
-    const nearby = found.filter((p) => p.placeId !== place.placeId && distanceKm(center, p) <= MARKET_RADIUS_KM && classifyBusiness(p.types) !== "non_clinic");
+    const nearby = found.filter(
+      (p) => p.placeId !== place.placeId && distanceKm(center, p) <= MARKET_RADIUS_KM && matchesDisciplines(p.types, clinic.disciplines),
+    );
     counts.push({ service, count: nearby.length });
     for (const p of nearby) seen.set(p.placeId, p);
   }

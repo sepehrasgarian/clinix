@@ -1,4 +1,4 @@
-import type { Analysis, Clinic, ChatMessage, Report, Review } from "../index.js";
+import type { Analysis, Clinic, ChatMessage, Report, Review } from "../index";
 
 // A complete, realistic sample for a North York dental clinic. Every name is invented.
 // The web app renders from this in mock mode; the API serves it at /api/mock/*.

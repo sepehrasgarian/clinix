@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Discipline, Id, IsoDate } from "./common.js";
+import { Discipline, Id, IsoDate } from "./common";
 
 export const ReviewCitation = z.object({
   reviewId: Id,

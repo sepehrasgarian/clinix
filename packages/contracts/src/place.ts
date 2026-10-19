@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Id, IsoDate } from "./common.js";
+import { Id, IsoDate } from "./common";
 
 /** A review with reviewer identity removed at ingest. */
 export const Review = z.object({
@@ -25,6 +25,8 @@ export const Place = z.object({
   phone: z.string().optional(),
   types: z.array(z.string()).default([]),
   hours: z.array(z.string()).optional(),
+  /** Google photo resource name; fetch it through the API's photo proxy, never with the key in the browser. */
+  photoName: z.string().optional(),
   sampleReviews: z.array(Review).default([]),
 });
 export type Place = z.infer<typeof Place>;

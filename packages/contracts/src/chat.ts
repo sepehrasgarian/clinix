@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Id, IsoDate } from "./common.js";
+import { Id, IsoDate } from "./common";
 
 export const ChatMessage = z.object({
   id: Id,
