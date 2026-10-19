@@ -34,6 +34,21 @@ cd apps/mobile && cp .env.example .env # add EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY, 
 npm install && npx expo start
 ```
 
+## API
+
+All routes under `/api` need a Clerk bearer token. Without `CLERK_SECRET_KEY` set (local dev), pass `x-user-id: <anything>` instead.
+
+| Method | Route | What it does |
+|---|---|---|
+| POST | `/api/clinics` | Save the owner's clinic profile (name, type, address, city, services, prices, notes) |
+| GET | `/api/clinics` | List the owner's clinics |
+| GET | `/api/clinics/:id` | Clinic + stored competitors + past consultations |
+| POST | `/api/clinics/:id/analyze` | Run the Claude agent: web-search competitors, write the consultation, store everything in SurrealDB. 1–3 min. |
+| POST | `/api/clinics/:id/chat` | Follow-up question to the consultant. Remembers prior turns per clinic. |
+
+Try the agent from the terminal without the app: `cd apps/api && npm run demo` (uses roughly $0.50–$1.50 of Anthropic credit).
+
 ## Team
 
 - Sepehr Asgarian
+- Rouzbeh Gh ([@RouzbehGh](https://github.com/RouzbehGh))
