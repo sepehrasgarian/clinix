@@ -1,6 +1,6 @@
 // Quick end-to-end check from the terminal: npm run demo
-// Needs ANTHROPIC_API_KEY in apps/api/.env. Uses roughly $0.50-$1.50 of credit per run.
-import "dotenv/config";
+// Needs ANTHROPIC_API_KEY in the repo-root .env. Uses roughly $0.50-$1.50 of credit per run.
+import "./env.js";
 import { analyzeClinic } from "./agent.js";
 
 const sample = {

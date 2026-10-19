@@ -1,4 +1,4 @@
-import "dotenv/config";
+import { env } from "./env.js";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { serve } from "@hono/node-server";
@@ -98,8 +98,7 @@ api.post("/clinics/:id/chat", async (c) => {
 
 app.route("/api", api);
 
-const port = Number(process.env.PORT ?? 8787);
-serve({ fetch: app.fetch, port }, () => {
-  console.log(`clinix-api listening on http://localhost:${port}`);
+serve({ fetch: app.fetch, port: env.PORT }, () => {
+  console.log(`clinix-api listening on http://localhost:${env.PORT}`);
 });
 

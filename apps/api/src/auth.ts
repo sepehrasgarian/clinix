@@ -1,9 +1,10 @@
 import { verifyToken } from "@clerk/backend";
 import type { Context, Next } from "hono";
+import { env } from "./env.js";
 
 // Verifies the Clerk session token from `Authorization: Bearer <token>`.
 // In local dev without CLERK_SECRET_KEY, falls back to an `x-user-id` header.
-const secretKey = process.env.CLERK_SECRET_KEY;
+const secretKey = env.CLERK_SECRET_KEY;
 
 export async function requireUser(c: Context, next: Next) {
   if (!secretKey) {

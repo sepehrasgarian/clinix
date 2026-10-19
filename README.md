@@ -8,7 +8,7 @@ Tell Clinix where your clinic is and what you offer. It finds the competing clin
 
 | Layer | Tech |
 |---|---|
-| Mobile app | Expo (React Native, TypeScript) |
+| Web app | Next.js (App Router, TypeScript, Tailwind) |
 | Auth | Clerk |
 | Agent memory | SurrealDB (embedded engine, zero setup) |
 | AI | Claude (Anthropic API) with web search for competitor discovery |
@@ -18,8 +18,10 @@ Tell Clinix where your clinic is and what you offer. It finds the competing clin
 
 ```
 apps/
-  mobile/   Expo app (clinic owner UI)
+  web/      Next.js app (clinic owner UI)
   api/      Hono API: Clerk-verified routes, Claude agent, SurrealDB memory
+packages/
+  contracts/  Zod schemas + fixtures shared by web and api
 ```
 
 ## Run it
@@ -29,9 +31,9 @@ apps/
 cd apps/api && cp .env.example .env   # add ANTHROPIC_API_KEY, CLERK_SECRET_KEY
 npm install && npm run dev            # http://localhost:8787
 
-# Mobile
-cd apps/mobile && cp .env.example .env # add EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY, EXPO_PUBLIC_API_URL
-npm install && npx expo start
+# Web
+cd apps/web && cp .env.example .env    # add NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY, NEXT_PUBLIC_API_URL
+npm install && npm run dev
 ```
 
 ## API

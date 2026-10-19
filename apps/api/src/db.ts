@@ -1,6 +1,7 @@
 import { Surreal, RecordId, Table } from "surrealdb";
 import { createNodeEngines } from "@surrealdb/node";
 import { mkdirSync } from "node:fs";
+import { env } from "./env.js";
 
 // Embedded SurrealDB: no server to run. Data persists under ./data.
 // Set SURREAL_URL to a remote instance (ws://...) to use Surreal Cloud instead.
@@ -8,7 +9,7 @@ let db: Surreal | null = null;
 
 export async function getDb(): Promise<Surreal> {
   if (db) return db;
-  const url = process.env.SURREAL_URL ?? "surrealkv://./data/clinix";
+  const url = env.SURREAL_URL;
   if (url.startsWith("surrealkv://")) mkdirSync("./data", { recursive: true });
 
   db = new Surreal({ engines: createNodeEngines() });
