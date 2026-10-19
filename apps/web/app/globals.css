@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+/* Design tokens. Calm, light, one accent colour. Colour carries meaning only. */
+@theme {
+  --color-primary: #4338ca;
+  --color-primary-soft: #eef0fb;
+  --color-ink: #0e1526;
+  --color-muted: #4b5566;
+  --color-faint: #8a93a3;
+  --color-line: #e3e7ee;
+  --color-surface: #f6f8fb;
+  --color-card: #ffffff;
+  --color-success: #15803d;
+  --color-success-soft: #ecfdf3;
+  --color-warning: #b45309;
+  --color-warning-soft: #fff7ed;
+  --color-alert: #b91c1c;
+  --color-alert-soft: #fef2f2;
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --radius-card: 16px;
+  --radius-pill: 999px;
+  --shadow-card: 0 1px 2px rgb(14 21 38 / 0.04), 0 4px 16px rgb(14 21 38 / 0.05);
+}
+
+html {
+  font-size: 14px;
+}
+
+body {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

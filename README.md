@@ -27,11 +27,11 @@ packages/
 ## Run it
 
 ```bash
-cp .env.example .env        # fill ANTHROPIC_API_KEY, GOOGLE_PLACES_API_KEY, APIFY_TOKEN, Clerk keys
-npm install
-npm run dev:api             # http://localhost:8787
-npm run dev:web             # http://localhost:3000 (apps/web)
+./dev.sh                    # installs if needed, starts API (8787) and web (3000); Ctrl+C stops both
+./dev.sh --check            # typecheck + tests for every package
 ```
+
+On first run it creates `.env` from `.env.example`; add `ANTHROPIC_API_KEY`, `GOOGLE_PLACES_API_KEY` and `APIFY_TOKEN` there. The web app reads from the shared fixture by default (`NEXT_PUBLIC_API_MODE=mock`); set it to `real` to use the API.
 
 ## API
 
@@ -44,8 +44,12 @@ All routes under `/api` need a Clerk bearer token. Without `CLERK_SECRET_KEY` se
 | GET | `/api/clinics/:id` | Clinic + its analyses |
 | POST | `/api/clinics/:id/analyses` | Start the quick scan (finds the Google listing, reads the website, previews the market). Returns 202; poll the analysis. |
 | GET | `/api/clinics/:id/analyses/:aid` | Analysis with `stage`, `status` and per-phase progress |
-| POST | `/api/clinics/:id/analyses/:aid/services` | Checkpoint 1: confirm services, moves the analysis to discovery |
+| POST | `/api/clinics/:id/analyses/:aid/services` | Checkpoint 1: confirm services; starts competitor discovery (returns 202) |
+| POST | `/api/clinics/:id/analyses/:aid/competitors` | Checkpoint 2: confirm up to 5 competitors per discipline; queues the deep analysis |
+| POST | `/api/clinics/:id/analyses/:aid/competitors/add` | Add a competitor we missed, by name |
 | POST | `/api/clinics/:id/analyses/:aid/retry` | Retry a failed quick scan |
+| GET | `/api/lookup/clinic-search?q=&city=` | Google listings matching a clinic name, for onboarding |
+| GET | `/api/lookup/photo/:name` | Listing photo proxy (the Google key never reaches the browser) |
 
 Analysis `status` values: `queued`, `running`, `awaiting_services`, `awaiting_competitors`, `succeeded`, `failed`. `stage` is `quick_scan`, `discovery` or `deep`.
 
@@ -74,7 +78,8 @@ import { fixtureReport } from "@clinix/contracts/fixtures";
 npm install                 # once, at the repo root (npm workspaces)
 npm run typecheck           # all packages
 npm test                    # all packages
-npm run dev:api             # http://localhost:8787
+npm run dev:api             # API only, http://localhost:8787
+npm run dev:web             # web only, http://localhost:3000
 ```
 
 ## Team

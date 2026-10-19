@@ -21,3 +21,4 @@ CLAUDE.local.md
 *.plan.md
 .cursor/
 .aider*
+.logs/
