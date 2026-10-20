@@ -47,8 +47,8 @@ export async function understand(clinic: Clinic, place: Place, deps: PipelineDep
       nicheTermsByService: {},
     };
   }
-  const notes = await deps.ai.readWeb({ urls: [website], system: understandSystem(), question: understandQuestion(clinic.name) });
-  const extracted = await deps.ai.structured({ schema: Understanding, system: "You extract structured facts from notes.", user: understandExtractPrompt(clinic.disciplines, notes) });
+  const notes = await deps.ai.readWeb({ urls: [website], system: understandSystem(), question: understandQuestion(clinic.name), tier: "light" });
+  const extracted = await deps.ai.structured({ schema: Understanding, system: "You extract structured facts from notes.", user: understandExtractPrompt(clinic.disciplines, notes), tier: "light" });
   // The owner's declared services always count, even when the site omits them.
   const services = [...new Set([...extracted.services, ...clinic.services])];
   return { ...extracted, services };

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { Discipline, FindingKind, type Clinic, type Finding, type Review } from "@clinix/contracts";
 import { dedupeFindings, validateFinding, type ProposedFinding } from "../lib/citations.js";
 import { newId } from "../lib/ids.js";
+import { env } from "../env.js";
 import { miningSystem, miningUser } from "../prompts/mine.js";
 import type { PipelineDeps } from "./deps.js";
 
@@ -30,7 +31,7 @@ export async function mineBusiness(clinic: Clinic, business: Business, deps: Pip
     schema: MinedOutput,
     system: await miningSystem(business.discipline, deps.guides),
     user: miningUser({ businessName: business.name, isOwnClinic: business.placeId === null, ownerClinicName: clinic.name, services: clinic.services, reviews }),
-    tier: "strong",
+    tier: env.MINING_TIER,
   });
   const byId = new Map(reviews.map((r) => [r.id, r]));
   return findings.map((f) => {

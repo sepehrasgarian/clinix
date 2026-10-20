@@ -15,6 +15,11 @@ const EnvSchema = z.object({
   APIFY_TOKEN: z.string().min(1).optional(),
   CLERK_SECRET_KEY: z.string().min(1).optional(),
   SURREAL_URL: z.string().min(1).default("surrealkv://./data/clinix"),
+  /** Model per tier (see clients/anthropic.ts) and which tier reads reviews. */
+  MODEL_STRONG: z.string().min(1).optional(),
+  MODEL_FAST: z.string().min(1).optional(),
+  MODEL_LIGHT: z.string().min(1).optional(),
+  MINING_TIER: z.enum(["strong", "fast", "light"]).default("strong"),
   /** Private discipline guides: a folder on disk, or a private GitHub repo read with a scoped token. */
   DISCIPLINE_PACKS_DIR: z.string().min(1).optional(),
   DISCIPLINE_PACKS_REPO: z.string().regex(/^[\w.-]+\/[\w.-]+$/).optional(),

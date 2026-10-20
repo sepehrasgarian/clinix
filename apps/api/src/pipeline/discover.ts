@@ -69,7 +69,7 @@ export async function rankCandidates(clinic: Clinic, services: string[], found: 
     reviewCount: f.place.reviewCount,
     foundBy: [...f.foundBy],
   }));
-  const { rankings } = await deps.ai.structured({ schema: RankOutput, system: rankSystem(clinic.disciplines, clinic.city), user: rankUser(clinic.name, services, inputs) });
+  const { rankings } = await deps.ai.structured({ schema: RankOutput, system: rankSystem(clinic.disciplines, clinic.city), user: rankUser(clinic.name, services, inputs), tier: "light" });
   const byId = new Map(rankings.map((r) => [r.id, r]));
 
   return found
