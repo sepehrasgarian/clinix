@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { DISCIPLINE_LABELS, type Discipline } from "@clinix/contracts";
+import { DISCIPLINE_LABELS, DISCIPLINES, type Discipline } from "@clinix/contracts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const load = (name: string) => readFileSync(resolve(here, "text", name), "utf8").trim();
@@ -20,7 +20,8 @@ export type RankCandidateInput = {
 export function rankSystem(disciplines: Discipline[], city: string): string {
   return load("rank_competitors.txt")
     .replace("{discipline}", disciplines.map((d) => DISCIPLINE_LABELS[d]).join(" / "))
-    .replace("{city}", city);
+    .replace("{city}", city)
+    .replace("{discipline_ids}", DISCIPLINES.map((d) => d.id).join(", "));
 }
 
 export function rankUser(clinicName: string, services: string[], candidates: RankCandidateInput[]): string {

@@ -6,3 +6,4 @@ services that found it. Score relevance 0-100 and flag:
 - borderline: adjacent discipline or unclear (e.g. a general medical clinic, a spa that lists massage)
 - irrelevant: not a clinic, a hospital, a pharmacy, a supplier, or a different field
 Give a one-sentence reason a clinic owner would accept. Return every candidate id exactly once.
+For each candidate also list the disciplines it offers, using only these ids: {discipline_ids}.
