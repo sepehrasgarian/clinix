@@ -6,6 +6,7 @@ import { ListingCard } from "./ListingCard";
 import { PhaseTimeline } from "./PhaseTimeline";
 import { PrimaryButton, SetupFrame } from "./SetupFrame";
 import { Sticker } from "./Sticker";
+import { WaitingRadar } from "./WaitingRadar";
 
 const questionIcons = [Search, MessageSquareQuote, Trophy];
 
@@ -53,6 +54,11 @@ export function ScanningStage({ analysis, disciplines = [], onRetry, retrying }:
       aside={aside}
     >
       <div className="flex flex-col gap-5">
+        {!failed && (
+          <Card className="p-6">
+            <WaitingRadar stage={analysis.stage} clinicName={analysis.scan?.place.name} />
+          </Card>
+        )}
         <Card className="p-6">
           <PhaseTimeline phases={analysis.phases} />
           {failed && <p className="rounded-xl bg-alert-soft p-4 text-sm text-alert">{copy.onboarding.scanning.failed} {analysis.error}</p>}
