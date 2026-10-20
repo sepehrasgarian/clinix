@@ -4,6 +4,7 @@ import { createClinic, updateClinic } from "../../src/db/clinics.js";
 import { createAnalysis, getAnalysis, transition } from "../../src/db/analyses.js";
 import { startDiscovery } from "../../src/pipeline/runner.js";
 import type { PipelineDeps } from "../../src/pipeline/deps.js";
+import { testGuides } from "../helpers.js";
 import type { Place } from "@clinix/contracts";
 
 const input = { name: "Finch East Family Dental", address: "77 Finch Ave E", city: "Toronto", province: "ON", disciplines: ["dentistry" as const], services: ["cleaning"] };
@@ -11,6 +12,7 @@ const peer: Place = { placeId: "p_a", name: "Peer", address: "", lat: 43.785, ln
 
 const deps = (): PipelineDeps => ({
   places: { searchText: vi.fn(async () => [peer]) } as unknown as PipelineDeps["places"],
+  guides: testGuides(),
   ai: { structured: vi.fn(async () => ({ rankings: [{ id: "p_a", relevance: 88, flag: "strong", reason: "ok", disciplines: ["dentistry"] }] })), readWeb: vi.fn() } as unknown as PipelineDeps["ai"],
 });
 

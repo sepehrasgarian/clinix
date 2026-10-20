@@ -15,6 +15,10 @@ const EnvSchema = z.object({
   APIFY_TOKEN: z.string().min(1).optional(),
   CLERK_SECRET_KEY: z.string().min(1).optional(),
   SURREAL_URL: z.string().min(1).default("surrealkv://./data/clinix"),
+  /** Private discipline guides: a folder on disk, or a private GitHub repo read with a scoped token. */
+  DISCIPLINE_PACKS_DIR: z.string().min(1).optional(),
+  DISCIPLINE_PACKS_REPO: z.string().regex(/^[\w.-]+\/[\w.-]+$/).optional(),
+  GITHUB_TOKEN: z.string().min(1).optional(),
   PORT: z.coerce.number().int().positive().default(8787),
 });
 

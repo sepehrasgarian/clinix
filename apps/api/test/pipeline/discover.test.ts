@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { Clinic, CompetitorCandidate, Place } from "@clinix/contracts";
 import { autoSelect, gatherCandidates, rankCandidates, runDiscovery, validateSelection } from "../../src/pipeline/discover.js";
 import type { PipelineDeps } from "../../src/pipeline/deps.js";
+import { testGuides } from "../helpers.js";
 
 const clinic: Clinic = {
   id: "clinic_1", ownerId: "u", name: "Finch East Family Dental", address: "77 Finch Ave E", city: "Toronto", province: "ON",
@@ -16,6 +17,7 @@ const nearby = [place("p_own", 0), place("p_a", 0.005), place("p_b", 0.012), pla
 function deps(ranking?: unknown): PipelineDeps {
   return {
     places: { searchText: vi.fn(async () => nearby) } as unknown as PipelineDeps["places"],
+  guides: testGuides(),
     ai: {
       structured: vi.fn(async () => ranking ?? {
         rankings: [

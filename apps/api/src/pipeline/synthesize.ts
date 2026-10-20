@@ -41,7 +41,7 @@ export async function synthesizePlan(clinic: Clinic, findings: Finding[], scorec
     `\nVERIFIED FINDINGS (${kept.length})\n${lines.join("\n")}`,
   ].join("\n");
 
-  const out = await deps.ai.structured({ schema: PlanOutput, system: synthesizeSystem(), user, tier: "strong" });
+  const out = await deps.ai.structured({ schema: PlanOutput, system: await synthesizeSystem(deps.guides), user, tier: "strong" });
   const known = new Set(kept.map((f) => f.id));
   const recommendations: Recommendation[] = out.recommendations
     .map((r) => ({ ...r, id: newId("rec"), findingIds: r.findingIds.filter((id) => known.has(id)), status: "todo" as const }))

@@ -28,7 +28,7 @@ export async function mineBusiness(clinic: Clinic, business: Business, deps: Pip
   const reviews = business.reviews.slice(0, MAX_REVIEWS_PER_BUSINESS);
   const { findings } = await deps.ai.structured({
     schema: MinedOutput,
-    system: miningSystem(business.discipline),
+    system: await miningSystem(business.discipline, deps.guides),
     user: miningUser({ businessName: business.name, isOwnClinic: business.placeId === null, ownerClinicName: clinic.name, services: clinic.services, reviews }),
     tier: "strong",
   });

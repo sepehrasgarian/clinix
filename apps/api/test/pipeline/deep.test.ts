@@ -7,6 +7,7 @@ import { createAnalysis, getAnalysis, saveDiscovery, saveScan, transition } from
 import { collectReviews } from "../../src/pipeline/reviews.js";
 import { startDeep } from "../../src/pipeline/runner.js";
 import type { PipelineDeps } from "../../src/pipeline/deps.js";
+import { testGuides } from "../helpers.js";
 
 const input = { name: "Finch East Family Dental", address: "77 Finch Ave E", city: "Toronto", province: "ON", disciplines: ["dentistry" as const], services: ["cleaning"], opened: "2019-03" };
 
@@ -44,6 +45,7 @@ const quoteFrom = (id: string) => byId.get(id)!.text.slice(0, 40);
 function deps(reviews: Review[] = fixtureReviews): PipelineDeps {
   return {
     places: {} as PipelineDeps["places"],
+  guides: testGuides(),
     ai: fakeAi(),
     reviews: { fetchReviews: vi.fn(async (ids: string[]) => reviews.filter((r) => ids.includes(r.placeId))) },
   };

@@ -4,6 +4,7 @@ import { createClinic, getClinicById } from "../../src/db/clinics.js";
 import { createAnalysis, getAnalysis, transition } from "../../src/db/analyses.js";
 import { startQuickScan } from "../../src/pipeline/runner.js";
 import type { PipelineDeps } from "../../src/pipeline/deps.js";
+import { testGuides } from "../helpers.js";
 import type { Place } from "@clinix/contracts";
 
 const input = { name: "Finch East Family Dental", address: "77 Finch Ave E", city: "Toronto", province: "ON", disciplines: ["dentistry" as const], services: [] as string[] };
@@ -15,6 +16,7 @@ const deps = (opts: { failEnrich?: boolean } = {}): PipelineDeps => ({
     searchText: vi.fn(async () => [own]),
     details: vi.fn(async () => own),
   } as unknown as PipelineDeps["places"],
+  guides: testGuides(),
   ai: { readWeb: vi.fn(), structured: vi.fn() } as unknown as PipelineDeps["ai"],
 });
 

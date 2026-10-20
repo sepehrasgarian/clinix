@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { Clinic, Place } from "@clinix/contracts";
 import { enrich, marketPreview, runQuickScan, understand, validate } from "../../src/pipeline/quickScan.js";
 import type { PipelineDeps } from "../../src/pipeline/deps.js";
+import { testGuides } from "../helpers.js";
 import type { AiClient } from "../../src/clients/anthropic.js";
 import type { PlacesClient } from "../../src/clients/places.js";
 
