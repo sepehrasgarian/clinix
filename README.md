@@ -78,6 +78,10 @@ import type { Report, Finding } from "@clinix/contracts";
 import { fixtureReport } from "@clinix/contracts/fixtures";
 ```
 
+## Logs
+
+The API logs one JSON line per request, pipeline phase, model call and external call, each with its duration. `LOG_LEVEL` sets the level, `LOG_FORMAT=pretty` makes it readable locally. `./dev.sh` writes them to `.logs/api.log`.
+
 ## Development
 
 ```bash

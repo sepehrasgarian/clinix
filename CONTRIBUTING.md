@@ -23,6 +23,10 @@ Secrets live in the repo-root `.env` (gitignored). Keep `.env.example` in sync w
 - Reviewer names and photos are never stored. Never commit `apps/api/data/` or any real clinic data.
 - Never recommend price changes in generated text.
 
+## Observability
+
+One structured logger (`apps/api/src/lib/log.ts`, pino) with `LOG_LEVEL` and `LOG_FORMAT` settings. Every request, pipeline phase, model call and external call logs one line with its duration, so a run can be followed end to end from the log. No `console.log` in the API. Interrupted runs are recovered on startup and stale ones are reaped when read.
+
 ## Tests
 
 Every change ships with tests: happy path plus one failure path. API tests run against an in-memory database with the model mocked; web tests use Testing Library. `./dev.sh --check` must pass before a commit.
