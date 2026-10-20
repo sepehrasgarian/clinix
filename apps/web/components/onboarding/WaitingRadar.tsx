@@ -35,7 +35,7 @@ const LINES: Record<AnalysisStage, string[]> = {
  * Something to look at while a stage runs: a radar of the search rings around the clinic,
  * and a rotating line saying what is being checked. Descriptive, never a fake progress bar.
  */
-export function WaitingRadar({ stage, clinicName }: { stage: AnalysisStage; clinicName?: string }) {
+export function WaitingRadar({ stage, clinicName, compact = false }: { stage: AnalysisStage; clinicName?: string; compact?: boolean }) {
   const lines = LINES[stage];
   const [i, setI] = useState(0);
   useEffect(() => {
@@ -43,10 +43,10 @@ export function WaitingRadar({ stage, clinicName }: { stage: AnalysisStage; clin
     return () => clearInterval(id);
   }, [lines.length]);
 
-  const rings = stage === "discovery" ? ["2 km", "5 km", "15 km"] : ["", "5 km", ""];
+  const rings = stage === "discovery" ? ["2 km", "5 km", "15 km"] : ["", "", ""];
   return (
-    <div className="flex flex-col items-center gap-5 sm:flex-row sm:gap-8" data-testid="waiting-radar">
-      <div className="relative size-44 shrink-0" aria-hidden>
+    <div className={clsx("flex flex-col items-center gap-5 sm:flex-row", compact ? "sm:gap-5" : "sm:gap-8")} data-testid="waiting-radar">
+      {!compact && <div className="relative size-44 shrink-0" aria-hidden>
         {[0, 1, 2].map((r) => (
           <span
             key={r}
@@ -70,7 +70,7 @@ export function WaitingRadar({ stage, clinicName }: { stage: AnalysisStage; clin
           ].map(([x, y], k) => (
             <span key={k} className="absolute size-2.5 rounded-full bg-[#f5b942] shadow motion-safe:animate-pulse" style={{ left: x, top: y, animationDelay: `${k * 0.4}s` }} />
           ))}
-      </div>
+      </div>}
       <div className="min-w-0 flex-1 text-center sm:text-left">
         <p className="text-xs font-semibold tracking-wide text-faint uppercase">Right now</p>
         <p key={i} className="mt-1 text-base font-medium motion-safe:animate-[fadeIn_.5s_ease-out]" aria-live="polite">{lines[i]}</p>

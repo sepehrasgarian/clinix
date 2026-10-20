@@ -84,6 +84,8 @@ export async function recoverInterrupted(opts: { all?: boolean } = {}): Promise<
     if (opts.all || age > STAGE_TIMEOUT_MS[a.stage]) {
       const moved = await transition(a.id, "running", { status: "failed", error: INTERRUPTED });
       if (moved) {
+        const open = a.phases.find((p) => p.status === "running");
+        if (open) await setPhase(a.id, open.phase, { status: "failed", startedAt: open.startedAt, finishedAt: nowIso(), error: INTERRUPTED });
         n++;
         log.warn({ analysisId: a.id, stage: a.stage, ageMs: age }, "recovered interrupted analysis");
       }

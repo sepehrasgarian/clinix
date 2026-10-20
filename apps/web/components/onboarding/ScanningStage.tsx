@@ -1,4 +1,4 @@
-import { Lightbulb, MessageSquareQuote, Search, Trophy } from "lucide-react";
+import { AlertTriangle, Lightbulb, MessageSquareQuote, RotateCw, Search, Trophy } from "lucide-react";
 import type { Analysis, Discipline } from "@clinix/contracts";
 import { Card } from "@/components/ui/Card";
 import { copy } from "@/lib/copy";
@@ -59,9 +59,22 @@ export function ScanningStage({ analysis, disciplines = [], onRetry, retrying }:
             <WaitingRadar stage={analysis.stage} clinicName={analysis.scan?.place.name} />
           </Card>
         )}
+        {failed && (
+          <Card className="border-alert/30 bg-alert-soft p-5" role="alert">
+            <div className="flex items-start gap-3">
+              <span className="grid size-9 shrink-0 place-items-center rounded-full bg-alert text-white"><AlertTriangle size={16} aria-hidden /></span>
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-alert">{copy.onboarding.scanning.failed}</p>
+                <p className="mt-0.5 text-sm text-ink">{analysis.error}</p>
+                <button type="button" onClick={onRetry} disabled={retrying} className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-white disabled:opacity-50">
+                  <RotateCw size={16} aria-hidden className={retrying ? "animate-spin" : ""} /> {retrying ? "Retrying…" : copy.onboarding.scanning.retry}
+                </button>
+              </div>
+            </div>
+          </Card>
+        )}
         <Card className="p-6">
           <PhaseTimeline phases={analysis.phases} />
-          {failed && <p className="rounded-xl bg-alert-soft p-4 text-sm text-alert">{copy.onboarding.scanning.failed} {analysis.error}</p>}
         </Card>
         <Card className="p-6">
           <h2 className="font-semibold">{copy.onboarding.scanning.willAnswer}</h2>
