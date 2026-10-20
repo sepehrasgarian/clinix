@@ -6,7 +6,7 @@ import { createAnalysis, createAnalysisFromScan, getAnalysis, listAnalyses, reus
 import type { AuthVariables } from "../middleware/auth.js";
 import type { PipelineDeps } from "../pipeline/deps.js";
 import { validateSelection } from "../pipeline/discover.js";
-import { stageRunners, type StageRunners } from "../pipeline/runner.js";
+import { recoverInterrupted, stageRunners, type StageRunners } from "../pipeline/runner.js";
 import { distanceKm, ringFor } from "../lib/geo.js";
 
 const ServicesBody = z.object({ services: z.array(z.string().min(1)).min(1).max(12) });
@@ -36,8 +36,9 @@ export function analysesRoutes(deps: PipelineDeps, run: StageRunners = stageRunn
     .get("/:aid", async (c) => {
       const clinic = await getClinic(c.req.param("id")!, c.get("userId"));
       if (!clinic) return c.json({ error: "not found" }, 404);
-      const analysis = await getAnalysis(c.req.param("aid"));
+      let analysis = await getAnalysis(c.req.param("aid"));
       if (!analysis || analysis.clinicId !== clinic.id) return c.json({ error: "not found" }, 404);
+      if (analysis.status === "running" && (await recoverInterrupted()) > 0) analysis = (await getAnalysis(analysis.id)) ?? analysis;
       return c.json(analysis);
     })
     // Checkpoint 1: the owner confirms the services found by the quick scan.

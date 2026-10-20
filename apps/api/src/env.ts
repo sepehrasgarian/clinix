@@ -25,6 +25,9 @@ const EnvSchema = z.object({
   DISCIPLINE_PACKS_REPO: z.string().regex(/^[\w.-]+\/[\w.-]+$/).optional(),
   GITHUB_TOKEN: z.string().min(1).optional(),
   PORT: z.coerce.number().int().positive().default(8787),
+  LOG_LEVEL: z.enum(["trace", "debug", "info", "warn", "error", "silent"]).default("info"),
+  LOG_FORMAT: z.enum(["json", "pretty"]).default("json"),
+  WEB_ORIGIN: z.string().min(1).optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

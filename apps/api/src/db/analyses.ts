@@ -64,6 +64,13 @@ export async function createAnalysisFromScan(clinicId: string, scan: ScanResult)
   return Analysis.parse(toPlain(row));
 }
 
+/** Analyses currently marked running, oldest first. */
+export async function runningAnalyses(): Promise<Analysis[]> {
+  const db = await getDb();
+  const [rows] = await db.query<[unknown[]]>("SELECT * FROM analysis WHERE status = 'running' ORDER BY updatedAt ASC");
+  return rows.map((r) => Analysis.parse(toPlain(r)));
+}
+
 export async function getAnalysis(id: string): Promise<Analysis | null> {
   const db = await getDb();
   const row = await db.select(rid("analysis", id));

@@ -3,6 +3,7 @@ import { getAnalysis, saveDiscovery, saveReport, saveScan, setPhase, transition 
 import { getClinicById, updateClinic } from "../db/clinics.js";
 import { humanizeError } from "../lib/errors.js";
 import { nowIso } from "../lib/ids.js";
+import { log } from "../lib/log.js";
 import type { PipelineDeps } from "./deps.js";
 import { runDeepAnalysis } from "./deep.js";
 import { runDiscovery } from "./discover.js";
@@ -51,14 +52,44 @@ async function claimStage(analysisId: string, stage: AnalysisStage) {
 
 async function trackPhase(analysisId: string, phase: PhaseId, fn: () => Promise<void>): Promise<void> {
   const startedAt = nowIso();
+  const t0 = Date.now();
   await setPhase(analysisId, phase, { status: "running", startedAt });
+  log.info({ analysisId, phase }, "phase start");
   try {
     await fn();
     await setPhase(analysisId, phase, { status: "done", startedAt, finishedAt: nowIso() });
+    log.info({ analysisId, phase, ms: Date.now() - t0 }, "phase done");
   } catch (err) {
     await setPhase(analysisId, phase, { status: "failed", startedAt, finishedAt: nowIso(), error: humanizeError(err) });
+    log.error({ analysisId, phase, ms: Date.now() - t0, err: err instanceof Error ? { message: err.message } : String(err) }, "phase failed");
     throw err;
   }
+}
+
+/** How long a stage may stay "running" before it is considered interrupted. */
+export const STAGE_TIMEOUT_MS: Record<AnalysisStage, number> = { quick_scan: 5 * 60_000, discovery: 5 * 60_000, deep: 25 * 60_000 };
+const INTERRUPTED = "This step was interrupted. Press retry to run it again.";
+
+/**
+ * Jobs run inside the API process, so a restart loses whatever was running. On startup, and
+ * whenever a stale analysis is read, anything still "running" past its stage timeout (or at
+ * all, on startup) is marked failed with a retry message rather than left spinning forever.
+ */
+export async function recoverInterrupted(opts: { all?: boolean } = {}): Promise<number> {
+  const { runningAnalyses } = await import("../db/analyses.js");
+  const stuck = await runningAnalyses();
+  let n = 0;
+  for (const a of stuck) {
+    const age = Date.now() - new Date(a.updatedAt).getTime();
+    if (opts.all || age > STAGE_TIMEOUT_MS[a.stage]) {
+      const moved = await transition(a.id, "running", { status: "failed", error: INTERRUPTED });
+      if (moved) {
+        n++;
+        log.warn({ analysisId: a.id, stage: a.stage, ageMs: age }, "recovered interrupted analysis");
+      }
+    }
+  }
+  return n;
 }
 
 /** Stage 2: find and rank competitors, then wait for the owner to confirm them. */
