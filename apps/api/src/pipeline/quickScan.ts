@@ -60,8 +60,10 @@ export async function marketPreview(clinic: Clinic, place: Place, services: stri
   const counts: { service: string; count: number }[] = [];
   const seen = new Map<string, Place>();
 
-  for (const service of services.slice(0, 6)) {
-    const found = await deps.places.searchText(`${service} ${clinic.city}`, { near: center, radiusM: MARKET_RADIUS_M, max: 20 });
+  const results = await Promise.all(
+    services.slice(0, 6).map(async (service) => ({ service, found: await deps.places.searchText(`${service} ${clinic.city}`, { near: center, radiusM: MARKET_RADIUS_M, max: 20 }) })),
+  );
+  for (const { service, found } of results) {
     const nearby = found.filter(
       (p) => p.placeId !== place.placeId && distanceKm(center, p) <= MARKET_RADIUS_KM && matchesDisciplines(p.types, clinic.disciplines),
     );
