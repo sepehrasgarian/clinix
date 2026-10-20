@@ -45,6 +45,10 @@ export async function understand(clinic: Clinic, place: Place, deps: PipelineDep
       languages: ["English"],
       positioning: `${labels.join(" and ")} clinic with no website on record.`,
       nicheTermsByService: {},
+      team: [],
+      accessibility: [],
+      socialLinks: [],
+      trustSignals: [],
     };
   }
   const notes = await deps.ai.readWeb({ urls: [website], system: understandSystem(), question: understandQuestion(clinic.name), tier: "light" });

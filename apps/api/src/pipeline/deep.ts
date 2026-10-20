@@ -9,13 +9,14 @@ import { buildScorecard, type Peer } from "../lib/scorecard.js";
 import type { PipelineDeps } from "./deps.js";
 import { assignCompetitors, mineDiscipline, writeDisciplineSection } from "./disciplineAgent.js";
 import { collectReviews } from "./reviews.js";
+import { readCompetitorSites, servicesGap, siteSummaryLines } from "./websites.js";
 import { synthesizePlan } from "./synthesize.js";
 
 /** A report built on fewer than this many well-reviewed competitors is flagged as thin, not failed. */
 export const MIN_SOLID_COMPETITORS = 3;
 export const MIN_REVIEWS_SOLID = 10;
 
-export type DeepHooks = { onPhase: (phase: Extract<PhaseId, "reviews" | "mine" | "synthesize">, fn: () => Promise<void>) => Promise<void> };
+export type DeepHooks = { onPhase: (phase: Extract<PhaseId, "reviews" | "websites" | "mine" | "synthesize">, fn: () => Promise<void>) => Promise<void> };
 
 /**
  * Phases 5-7. One discipline agent per discipline the clinic offers reads the clinic's and its
@@ -47,7 +48,21 @@ export async function runDeepAnalysis(clinic: Clinic, analysis: Analysis, deps: 
     website: c.place.website,
     disciplines: c.disciplines,
     reviewsAnalyzed: reviewsByPlace.get(c.place.placeId)?.length ?? 0,
+    siteStatus: "no_website" as const,
+    servicesNotOnYourSite: [],
   }));
+
+  await hooks.onPhase("websites", async () => {
+    const sites = await readCompetitorSites(clinic, competitors, deps);
+    for (const c of competitors) {
+      const r = sites.get(c.placeId);
+      if (!r) continue;
+      c.siteStatus = r.status;
+      c.site = r.site;
+      c.servicesNotOnYourSite = r.site ? servicesGap(scan.understanding.services, r.site.services) : [];
+    }
+  });
+  const rivalSites = siteSummaryLines(competitors);
   const thinReport = competitors.filter((c) => c.reviewsAnalyzed >= MIN_REVIEWS_SOLID).length < MIN_SOLID_COMPETITORS;
   const byDiscipline = assignCompetitors(clinic.disciplines, competitors);
 
@@ -73,7 +88,7 @@ export async function runDeepAnalysis(clinic: Clinic, analysis: Analysis, deps: 
 
   let report!: Report;
   await hooks.onPhase("synthesize", async () => {
-    const plan = await synthesizePlan(clinic, findings, scorecard, nameOf, isNew, deps);
+    const plan = await synthesizePlan(clinic, findings, scorecard, nameOf, isNew, deps, rivalSites);
     const sections: DisciplineSection[] = await Promise.all(
       clinic.disciplines.map((discipline) =>
         writeDisciplineSection(
@@ -86,6 +101,7 @@ export async function runDeepAnalysis(clinic: Clinic, analysis: Analysis, deps: 
             rating: scan.place.rating,
             reviewCount: scan.place.reviewCount,
             positioning: scan.understanding.positioning,
+            rivalSites: siteSummaryLines(byDiscipline.get(discipline) ?? []),
           },
           deps,
         ).catch((err) => {

@@ -28,7 +28,7 @@ const PlanOutput = z.object({
 export type Synthesis = { summary: string; scorecardSummary: string; recommendations: Recommendation[] };
 
 /** Phase 7: the ranked plan. Only kept findings are offered; invented finding ids are dropped. */
-export async function synthesizePlan(clinic: Clinic, findings: Finding[], scorecard: Scorecard, competitorNames: Map<string, string>, isNew: boolean, deps: PipelineDeps): Promise<Synthesis> {
+export async function synthesizePlan(clinic: Clinic, findings: Finding[], scorecard: Scorecard, competitorNames: Map<string, string>, isNew: boolean, deps: PipelineDeps, rivalSites?: string): Promise<Synthesis> {
   const kept = findings.filter((f) => f.status === "kept");
   const lines = kept.map(
     (f) => `[${f.id}] (${f.kind}, ${f.confidence}, about ${f.competitorPlaceId === null ? "the owner's clinic" : competitorNames.get(f.competitorPlaceId) ?? "a competitor"}) ${f.claim} — ${f.whyItMatters}`,
@@ -39,6 +39,7 @@ export async function synthesizePlan(clinic: Clinic, findings: Finding[], scorec
     isNew ? "The clinic opened less than two years ago." : "",
     `\nSCORECARD\n${score}`,
     `\nVERIFIED FINDINGS (${kept.length})\n${lines.join("\n")}`,
+    rivalSites ? `\nCOMPETITOR WEBSITES (what each rival's own site states; use for gaps in services, booking, hours, billing and offers)\n${rivalSites}` : "",
   ].join("\n");
 
   const out = await deps.ai.structured({ schema: PlanOutput, system: await synthesizeSystem(deps.guides), user, tier: "strong" });

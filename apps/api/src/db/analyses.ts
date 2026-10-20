@@ -14,7 +14,7 @@ import { newId, nowIso } from "../lib/ids.js";
 
 const QUICK_SCAN_PHASES: PhaseId[] = ["validate", "enrich", "understand"];
 const DISCOVERY_PHASES: PhaseId[] = ["discover"];
-const DEEP_PHASES: PhaseId[] = ["reviews", "mine", "synthesize"];
+const DEEP_PHASES: PhaseId[] = ["reviews", "websites", "mine", "synthesize"];
 
 export function phasesFor(stage: AnalysisStage): PhaseProgress[] {
   const ids = stage === "quick_scan" ? QUICK_SCAN_PHASES : stage === "discovery" ? DISCOVERY_PHASES : DEEP_PHASES;

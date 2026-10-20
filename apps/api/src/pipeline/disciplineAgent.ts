@@ -58,7 +58,7 @@ const SectionOutput = z.object({
 
 export async function writeDisciplineSection(
   clinic: Clinic,
-  input: { discipline: Discipline; competitors: Competitor[]; findings: Finding[]; clinicPlan: Recommendation[]; rating?: number; reviewCount?: number; positioning: string },
+  input: { discipline: Discipline; competitors: Competitor[]; findings: Finding[]; clinicPlan: Recommendation[]; rating?: number; reviewCount?: number; positioning: string; rivalSites?: string },
   deps: PipelineDeps,
 ): Promise<DisciplineSection> {
   const kept = input.findings.filter((f) => f.status === "kept");
@@ -66,7 +66,7 @@ export async function writeDisciplineSection(
   const out = await deps.ai.structured({
     schema: SectionOutput,
     system: await disciplineSectionSystem(deps.guides),
-    user: disciplineSectionUser({ clinic, discipline: input.discipline, competitors: input.competitors, findings: kept, clinicPlan: input.clinicPlan, rating: input.rating, reviewCount: input.reviewCount, positioning: input.positioning }),
+    user: disciplineSectionUser({ clinic, discipline: input.discipline, competitors: input.competitors, findings: kept, clinicPlan: input.clinicPlan, rating: input.rating, reviewCount: input.reviewCount, positioning: input.positioning, rivalSites: input.rivalSites }),
     tier: "strong",
   });
   const leaderMatch = out.leader ? input.competitors.find((c) => c.name.toLowerCase() === out.leader!.name.toLowerCase() || out.leader!.name.toLowerCase().includes(c.name.toLowerCase())) : undefined;

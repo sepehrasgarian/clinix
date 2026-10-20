@@ -14,8 +14,11 @@ const input = { name: "Finch East Family Dental", address: "77 Finch Ave E", cit
 /** The model proposes two good findings, one with a made-up quote, and a plan that cites one bad id. */
 function fakeAi() {
   return {
-    readWeb: vi.fn(),
+    readWeb: vi.fn(async () => "Services: implants, whitening. Booking online."),
     structured: vi.fn(async ({ user }: { user: string }) => {
+      if (user.startsWith("From the notes below")) {
+        return { services: ["dental implants", "whitening", "cleaning"], specializations: [], languages: ["English"], positioning: "Rival site.", nicheTermsByService: {}, team: [], accessibility: [], socialLinks: [], trustSignals: [], booking: { online: true, phone: true }, pricingShown: true };
+      }
       if (user.startsWith("# Discipline")) {
         const ids = [...user.matchAll(/\[(f_[a-z0-9]+)\]/g)].map((m) => m[1]);
         return {
@@ -86,7 +89,7 @@ describe("deep analysis", () => {
     await startDeep(a.id, d);
     const after = (await getAnalysis(a.id))!;
     expect(after.status).toBe("succeeded");
-    expect(after.phases.map((p) => p.status)).toEqual(["done", "done", "done"]);
+    expect(after.phases.map((p) => p.status)).toEqual(["done", "done", "done", "done"]);
     const report = after.report!;
     // 5 businesses, but one has fewer than three reviews and is skipped: 4 x 2 proposals.
     expect(report.findings.length).toBe(8);
@@ -100,6 +103,16 @@ describe("deep analysis", () => {
     expect(report.scorecard.summary).toBe("Strong reputation, weak access.");
     expect(report.competitors).toHaveLength(4);
     expect(report.reviews.length).toBeGreaterThan(0);
+    // competitor websites: read where a site exists, the services gap computed against the owner's site
+    const withSite = report.competitors.filter((c) => c.website);
+    expect(withSite.length).toBeGreaterThan(0);
+    expect(withSite.every((c) => c.siteStatus === "read" && c.site?.pricingShown === true)).toBe(true);
+    expect(withSite[0].servicesNotOnYourSite).toEqual(["dental implants"]);
+    expect(report.competitors.filter((c) => !c.website).every((c) => c.siteStatus === "no_website")).toBe(true);
+    // the report agent and the discipline agents were told what rival sites say
+    const prompts = (d.ai.structured as ReturnType<typeof vi.fn>).mock.calls.map((c) => (c[0] as { user: string }).user);
+    expect(prompts.some((u) => u.includes("COMPETITOR WEBSITES") && u.includes("not on the owner's site: dental implants"))).toBe(true);
+    expect(prompts.some((u) => u.startsWith("# Discipline") && u.includes("booking: online"))).toBe(true);
     expect(report.reviews.every((r) => report.findings.some((f) => f.evidence.some((e) => e.reviewId === r.id)))).toBe(true);
     expect(report.thinReport).toBe(true); // fixture competitors have 3-4 reviews each
     expect(report.diff).toBeUndefined();

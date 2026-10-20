@@ -2,6 +2,7 @@ import { z } from "zod";
 import { Discipline, Id, IsoDate } from "./common";
 import { Place } from "./place";
 import { Report } from "./report";
+import { Understanding } from "./site";
 
 export const AnalysisStage = z.enum(["quick_scan", "discovery", "deep"]);
 export type AnalysisStage = z.infer<typeof AnalysisStage>;
@@ -22,6 +23,7 @@ export const PhaseId = z.enum([
   "understand",
   "discover",
   "reviews",
+  "websites",
   "mine",
   "synthesize",
 ]);
@@ -33,6 +35,7 @@ export const PHASE_LABELS: Record<PhaseId, string> = {
   understand: "Reading your website",
   discover: "Finding competitors near you",
   reviews: "Reading patient reviews",
+  websites: "Reading competitor websites",
   mine: "Looking for patterns with evidence",
   synthesize: "Writing your action plan",
 };
@@ -52,14 +55,6 @@ export const ScanHint = z.object({
 });
 export type ScanHint = z.infer<typeof ScanHint>;
 
-export const Understanding = z.object({
-  services: z.array(z.string()),
-  specializations: z.array(z.string()),
-  languages: z.array(z.string()),
-  positioning: z.string(),
-  nicheTermsByService: z.record(z.string(), z.array(z.string())),
-});
-export type Understanding = z.infer<typeof Understanding>;
 
 export const ScanResult = z.object({
   place: Place,

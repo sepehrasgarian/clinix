@@ -5,3 +5,16 @@ From the notes below about a {discipline} clinic, fill the structure exactly.
 - positioning: one sentence on how the clinic presents itself.
 - nicheTermsByService: for each service, 2-4 phrases a patient would type into Google for it.
 Use empty lists when the notes say nothing.
+- team: each practitioner the site names, as {role, name}; role only when no name is given.
+- booking: {online, phone, tool} where tool is the booking product named on the site, if any.
+- hours: one short line of opening hours as stated.
+- directBilling: true only if the site says it bills insurance directly.
+- newPatientOffer: the offer in the site's words, if any.
+- telehealth: true if virtual or phone appointments are offered.
+- accessibility: parking, wheelchair access, transit, evening or weekend hours, as stated.
+- locationsCount: number of locations the site lists.
+- pricingShown: true if any price is printed on the site.
+- socialLinks: social networks linked (names only).
+- freshness: the most recent dated item on the site, if any (e.g. "blog post from March 2026").
+- trustSignals: awards, years in business, memberships, certifications, as stated.
+Leave a field out, or use an empty list, when the notes say nothing about it.

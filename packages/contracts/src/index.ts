@@ -4,4 +4,5 @@ export * from "./clinic";
 export * from "./place";
 export * from "./report";
 export * from "./analysis";
+export * from "./site";
 export * from "./chat";

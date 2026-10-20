@@ -59,9 +59,26 @@ describe("CompetitorsSection", () => {
     expect(cards).toHaveLength(1);
     fireEvent.click(cards[0]);
     expect(screen.getByText(/What their patients say/)).toBeInTheDocument();
+    expect(screen.getByText(/couldn't read their website/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /their website/i })).toHaveAttribute("href", "https://sheppardcentredentistry.example");
     fireEvent.change(screen.getByLabelText(/search by clinic name/i), { target: { value: "zzz" } });
     expect(screen.getByText(/no clinic matches/i)).toBeInTheDocument();
+  });
+});
+
+describe("CompetitorsSection site facts", () => {
+  it("shows the services gap badge, the rival's services with gaps highlighted, and its site facts", () => {
+    render(<CompetitorsSection report={fixtureReport} disciplines={["dentistry", "dental_hygiene"]} />);
+    expect(screen.getByText("+2 not on your site")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Yonge Smile Studio/ }));
+    const services = screen.getByRole("list", { name: /services on their site/i });
+    expect(within(services).getByText(/dental implants · not on your site/)).toBeInTheDocument();
+    expect(within(services).getByText(/^cleaning$/)).toBeInTheDocument();
+    expect(screen.getByText(/Books online with Dentally/)).toBeInTheDocument();
+    expect(screen.getByText(/New patients: Free whitening kit/)).toBeInTheDocument();
+    expect(screen.getByText(/3 practitioners named/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Willowdale Dental Care/ }));
+    expect(screen.getByText(/No website on file/)).toBeInTheDocument();
   });
 });
 
@@ -100,6 +117,8 @@ describe("review goal and discipline ranking", () => {
     expect(screen.getByText("Your position")).toBeInTheDocument();
     expect(screen.getByRole("table")).toHaveTextContent(/\(you\)/);
     expect(screen.getByText("Leader")).toBeInTheDocument();
+    expect(screen.getByText("Offered by rivals, not by you")).toBeInTheDocument();
+    expect(screen.getByText("sedation dentistry")).toBeInTheDocument();
     render(<Overview report={fixtureReport} analysis={fixtureAnalysis} clinicId="c" clinicName="Finch East Family Dental" opened="2026-01" />);
     expect(screen.getByText(/Build reviews steadily/)).toBeInTheDocument();
     expect(screen.getAllByText(/Reach #/).length).toBeGreaterThan(0);

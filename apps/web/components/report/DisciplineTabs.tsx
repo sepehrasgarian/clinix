@@ -104,6 +104,18 @@ export function DisciplineTabs({ report, analysis, clinicName, clinicId, analysi
           </Card>
         )}
 
+        {rivals.some((r) => r.servicesNotOnYourSite.length > 0) && (
+          <Card className="p-6">
+            <h3 className="font-semibold">Offered by rivals, not by you</h3>
+            <p className="mt-1 text-sm text-muted">Services on their websites that your site does not mention. Worth a look, not a mandate.</p>
+            <ul className="mt-3 space-y-2 text-sm">
+              {rivals.filter((r) => r.servicesNotOnYourSite.length > 0).map((r) => (
+                <li key={r.placeId} className="flex flex-wrap items-baseline gap-x-2 gap-y-1"><span className="font-medium">{r.name}:</span>{r.servicesNotOnYourSite.map((svc) => <Pill key={svc} tone="warning">{svc}</Pill>)}</li>
+              ))}
+            </ul>
+          </Card>
+        )}
+
         <Card className="p-6">
           <h3 className="font-semibold">{copy.disciplines.holdingBack}</h3>
           <ul className="mt-3 space-y-3">

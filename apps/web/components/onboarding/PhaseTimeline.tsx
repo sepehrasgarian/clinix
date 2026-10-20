@@ -11,6 +11,7 @@ const DETAIL: Record<PhaseProgress["phase"], string> = {
   understand: "Reading your website to list the services you actually offer.",
   discover: "Searching within 2, 5 and 15 km for clinics that compete for the same patients.",
   reviews: "Collecting recent patient reviews for you and each chosen competitor.",
+  websites: "Reading each competitor's website: services, team, booking, hours, offers.",
   mine: "Looking for patterns, and checking every quote against the reviews it came from.",
   synthesize: "Writing your ranked action plan from the verified findings.",
 };

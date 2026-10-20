@@ -77,10 +77,24 @@ export const fixtureReport: Report = {
     ],
   },
   competitors: [
-    { placeId: "place_yonge_smile", name: "Yonge Smile Studio", distanceKm: 1.1, rating: 4.8, reviewCount: 310, website: "https://yongesmile.example", disciplines: ["dentistry", "dental_hygiene"], reviewsAnalyzed: 60 },
-    { placeId: "place_willowdale", name: "Willowdale Dental Care", distanceKm: 1.6, rating: 4.4, reviewCount: 190, disciplines: ["dentistry"], reviewsAnalyzed: 60 },
-    { placeId: "place_sheppard", name: "Sheppard Centre Dentistry", distanceKm: 2.3, rating: 4.5, reviewCount: 265, website: "https://sheppardcentredentistry.example", disciplines: ["dentistry"], reviewsAnalyzed: 60 },
-    { placeId: "place_bayview", name: "Bayview Village Dental", distanceKm: 3.4, rating: 4.7, reviewCount: 142, disciplines: ["dentistry"], reviewsAnalyzed: 48 },
+    {
+      placeId: "place_yonge_smile", name: "Yonge Smile Studio", distanceKm: 1.1, rating: 4.8, reviewCount: 310, website: "https://yongesmile.example", disciplines: ["dentistry", "dental_hygiene"], reviewsAnalyzed: 60,
+      siteStatus: "read",
+      site: {
+        services: ["cleaning", "whitening", "Invisalign", "dental implants", "sedation dentistry", "emergency dentistry"],
+        specializations: ["implants", "sedation"], languages: ["English", "Korean", "Mandarin"], positioning: "Modern studio with online booking and Saturday hours.",
+        nicheTermsByService: {}, team: [{ role: "dentist", name: "Dr. Kim" }, { role: "dentist" }, { role: "hygienist" }], booking: { online: true, phone: true, tool: "Dentally" },
+        hours: "Mon-Sat, until 7 pm on weekdays", directBilling: true, newPatientOffer: "Free whitening kit for new patients", telehealth: false,
+        accessibility: ["free parking", "wheelchair access"], locationsCount: 1, pricingShown: false, socialLinks: ["instagram"], freshness: "Blog post from September 2026", trustSignals: ["Invisalign Diamond provider"],
+      },
+      servicesNotOnYourSite: ["dental implants", "sedation dentistry"],
+    },
+    { placeId: "place_willowdale", name: "Willowdale Dental Care", distanceKm: 1.6, rating: 4.4, reviewCount: 190, disciplines: ["dentistry"], reviewsAnalyzed: 60, siteStatus: "no_website", servicesNotOnYourSite: [] },
+    {
+      placeId: "place_sheppard", name: "Sheppard Centre Dentistry", distanceKm: 2.3, rating: 4.5, reviewCount: 265, website: "https://sheppardcentredentistry.example", disciplines: ["dentistry"], reviewsAnalyzed: 60,
+      siteStatus: "unreadable", servicesNotOnYourSite: [],
+    },
+    { placeId: "place_bayview", name: "Bayview Village Dental", distanceKm: 3.4, rating: 4.7, reviewCount: 142, disciplines: ["dentistry"], reviewsAnalyzed: 48, siteStatus: "no_website", servicesNotOnYourSite: [] },
   ],
   findings: [
     {
@@ -323,6 +337,7 @@ export const fixtureAnalysis: Analysis = {
     { phase: "understand", status: "done", startedAt: "2026-10-19T15:00:09.000Z", finishedAt: "2026-10-19T15:00:52.000Z" },
     { phase: "discover", status: "done", startedAt: "2026-10-19T15:01:30.000Z", finishedAt: "2026-10-19T15:02:40.000Z" },
     { phase: "reviews", status: "done", startedAt: "2026-10-19T15:04:00.000Z", finishedAt: "2026-10-19T15:06:10.000Z" },
+    { phase: "websites", status: "done", startedAt: "2026-10-19T15:06:10.000Z", finishedAt: "2026-10-19T15:06:40.000Z" },
     { phase: "mine", status: "done", startedAt: "2026-10-19T15:06:10.000Z", finishedAt: "2026-10-19T15:09:30.000Z" },
     { phase: "synthesize", status: "done", startedAt: "2026-10-19T15:09:30.000Z", finishedAt: "2026-10-19T15:12:00.000Z" },
   ],
@@ -347,6 +362,15 @@ export const fixtureAnalysis: Analysis = {
       languages: ["English"],
       positioning: "Gentle family dentist with a single long-tenured practitioner.",
       nicheTermsByService: { Invisalign: ["clear aligners", "invisible braces"], "emergency dentistry": ["same day dentist", "cracked tooth"] },
+      team: [{ role: "dentist", name: "Dr. Patel" }, { role: "hygienist" }],
+      booking: { online: false, phone: true },
+      hours: "Mon-Fri 9-5",
+      directBilling: true,
+      accessibility: ["street parking"],
+      locationsCount: 1,
+      pricingShown: false,
+      socialLinks: [],
+      trustSignals: ["Serving Finch East since 2019"],
     },
     hints: [
       { kind: "review_gap", text: "The leading clinic within 2 km has 310 reviews; you have 128." },

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { Discipline, Id, IsoDate } from "./common";
 import { Review } from "./place";
+import { Understanding } from "./site";
 
 export const ReviewCitation = z.object({
   reviewId: Id,
@@ -82,6 +83,11 @@ export const Competitor = z.object({
   website: z.string().optional(),
   disciplines: z.array(Discipline),
   reviewsAnalyzed: z.number().int().nonnegative(),
+  /** What their website says, when it could be read. */
+  site: Understanding.optional(),
+  siteStatus: z.enum(["read", "no_website", "unreadable"]).default("no_website"),
+  /** Services on their site that the owner's site does not mention. */
+  servicesNotOnYourSite: z.array(z.string()).default([]),
 });
 export type Competitor = z.infer<typeof Competitor>;
 

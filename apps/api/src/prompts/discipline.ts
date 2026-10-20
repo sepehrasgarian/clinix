@@ -13,6 +13,8 @@ export function disciplineSectionUser(input: {
   competitors: Competitor[];
   findings: Finding[];
   clinicPlan: Recommendation[];
+  /** What rivals' websites say, one line each, from `siteSummaryLines`. */
+  rivalSites?: string;
 }): string {
   const label = DISCIPLINE_LABELS[input.discipline];
   const nameOf = (id: string | null) => (id === null ? "the clinic itself" : input.competitors.find((c) => c.placeId === id)?.name ?? "a rival");
@@ -28,7 +30,7 @@ export function disciplineSectionUser(input: {
     `\n# Clinic\nName: ${input.clinic.name}\nAddress: ${input.clinic.address}, ${input.clinic.city}\nWebsite: ${input.clinic.website ?? "none"}\nGoogle rating of the whole listing: ${input.rating ?? "?"} (${input.reviewCount ?? "?"} reviews) — clinic-wide, not specific to ${label}\nPositioning: ${input.positioning}`,
     `\n# Local rivals in ${label}\n${rivals}`,
     `\n# Rival intelligence (${label}) — verified findings; cite their ids\n${intelligence}`,
-    `\n# Services rivals list that you don't\nNot analysed in this report.`,
+    `\n# Services rivals list that you don't\n${input.rivalSites ?? "No competitor website could be read in this report."}`,
     `\n# Already in the clinic-wide plan — do not repeat these\n${plan}`,
     `\nReturn the section for ${label}. Every statement and every action must cite at least one finding id from the list above.`,
   ].join("\n");

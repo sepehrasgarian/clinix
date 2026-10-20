@@ -13,3 +13,6 @@ export const understandExtractPrompt = (disciplines: Discipline[], notes: string
 
 export const understandQuestion = (clinicName: string): string =>
   `Read the website of ${clinicName} and write structured notes for a competitive analysis.`;
+
+export const understandCompetitorQuestion = (clinicName: string): string =>
+  `Read the website of ${clinicName}, a competing clinic, and write structured notes for a competitive analysis. Follow its services, team, booking, hours, insurance, offers and contact pages when they exist.`;
