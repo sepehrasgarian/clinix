@@ -34,3 +34,10 @@ Every change ships with tests: happy path plus one failure path. API tests run a
 ## Commits
 
 Conventional Commits: `type(scope): imperative summary`, with types `feat`, `fix`, `refactor`, `docs`, `chore`, `test` and scopes `api`, `web`, `contracts`, `agent`, `db`, `auth`, `repo`. One logical change per commit. Pull before pushing; never force-push `main`.
+
+## Commit guard
+
+`scripts/githooks/pre-commit` runs on every commit (installed by `npm install` or `./dev.sh`). It
+refuses a commit that stages a private file (`.env`, local notes, the private guides, `apps/api/data`,
+logs) or a line that looks like an API key. If it fires, unstage the path it names and commit again.
+Never bypass it with `--no-verify`.

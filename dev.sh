@@ -19,9 +19,13 @@ if [ ! -f .env ]; then
   bold "Created .env from .env.example. Add your keys there (ANTHROPIC_API_KEY, GOOGLE_PLACES_API_KEY, APIFY_TOKEN)."
 fi
 
+# Every clone gets the commit guard (private files and secrets never reach the repository).
+git config core.hooksPath scripts/githooks 2>/dev/null || true
+
 if [ "${1:-}" = "--check" ]; then
   bold "Typecheck"; npm run typecheck
   bold "Tests"; npm test
+  bold "Commit guard"; scripts/githooks/test.sh
   exit 0
 fi
 

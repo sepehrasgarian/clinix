@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Keeps private files and secrets out of the public repository. Installed by ./dev.sh and `npm install`
+# (core.hooksPath = scripts/githooks). Blocks the commit and names the offending path or line.
+set -euo pipefail
+
+# Paths that never belong in this repository. Each pattern matches the start of a staged path.
+PRIVATE_PATHS='^(\.env|CLAUDE\.md|AGENTS\.md|CLAUDE\.local\.md|\.claude/|prompts_text/|prompts-private/|apps/api/data/|\.logs/|.*\.plan\.md$|.*/CLAUDE\.md$|.*/AGENTS\.md$)'
+# Things that look like credentials, whatever file they are in.
+SECRET_PATTERN='(sk-ant-[A-Za-z0-9_-]{8,}|AIza[0-9A-Za-z_-]{30,}|apify_api_[A-Za-z0-9]{8,}|ghp_[A-Za-z0-9]{30,}|sk_(live|test)_[A-Za-z0-9]{10,})'
+
+status=0
+while IFS= read -r path; do
+  [ -z "$path" ] && continue
+  if [[ "$path" =~ $PRIVATE_PATHS ]]; then
+    echo "pre-commit: '$path' is private and must not be committed. Unstage it: git restore --staged -- '$path'"
+    status=1
+  fi
+done < <(git diff --cached --name-only --diff-filter=ACMR)
+
+if git diff --cached --diff-filter=ACMR -U0 | grep -E '^\+' | grep -Ev '^\+\+\+' | grep -Eq "$SECRET_PATTERN"; then
+  echo "pre-commit: a staged line looks like an API key or token. Move it to .env and stage again."
+  status=1
+fi
+
+exit $status
