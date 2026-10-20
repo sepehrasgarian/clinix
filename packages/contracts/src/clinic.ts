@@ -5,7 +5,9 @@ export const ClinicInput = z.object({
   name: z.string().min(1),
   address: z.string().min(1),
   city: z.string().min(1),
-  province: z.string().length(2).default("ON"),
+  /** Province, state or region, when the address has one. */
+  province: z.string().max(40).optional(),
+  country: z.string().max(60).optional(),
   website: z.string().url().optional(),
   phone: z.string().optional(),
   disciplines: z.array(Discipline).min(1).max(4),
