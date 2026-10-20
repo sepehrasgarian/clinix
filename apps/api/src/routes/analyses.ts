@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import type { CompetitorCandidate } from "@clinix/contracts";
 import { getClinic, updateClinic } from "../db/clinics.js";
-import { createAnalysis, createAnalysisFromScan, getAnalysis, listAnalyses, reusableScan, saveDiscovery, setRecommendationStatus, transition } from "../db/analyses.js";
+import { createAnalysis, createAnalysisFromScan, findRecommendation, getAnalysis, listAnalyses, reusableScan, saveDiscovery, setRecommendationStatus, transition } from "../db/analyses.js";
 import type { AuthVariables } from "../middleware/auth.js";
 import type { PipelineDeps } from "../pipeline/deps.js";
 import { validateSelection } from "../pipeline/discover.js";
@@ -119,6 +119,6 @@ export function analysesRoutes(deps: PipelineDeps, run: StageRunners = stageRunn
       if (!analysis.report) return c.json({ error: "this analysis has no report yet" }, 409);
       const report = await setRecommendationStatus(analysis.id, c.req.param("rid"), body.data.status);
       if (!report) return c.json({ error: "not found" }, 404);
-      return c.json(report.recommendations.find((r) => r.id === c.req.param("rid")));
+      return c.json(findRecommendation(report, c.req.param("rid")));
     });
 }

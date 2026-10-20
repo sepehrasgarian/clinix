@@ -105,6 +105,20 @@ export const RunDiff = z.object({
 });
 export type RunDiff = z.infer<typeof RunDiff>;
 
+/** One discipline judged on its own: its rivals, what patients weigh, what to do. */
+export const DisciplineSection = z.object({
+  discipline: Discipline,
+  /** The rival that leads this discipline locally, when the evidence names one. */
+  leader: z.object({ placeId: z.string(), name: z.string(), reason: z.string() }).optional(),
+  patientDemand: z.array(z.string()),
+  /** What is holding the clinic back here. Each statement cites verified finding ids. */
+  statements: z.array(z.object({ text: z.string(), findingIds: z.array(Id).min(1) })),
+  recommendations: z.array(Recommendation),
+  summary: z.string(),
+  competitorPlaceIds: z.array(z.string()),
+});
+export type DisciplineSection = z.infer<typeof DisciplineSection>;
+
 export const Report = z.object({
   analysisId: Id,
   clinicId: Id,
@@ -119,5 +133,7 @@ export const Report = z.object({
   thinReport: z.boolean(),
   /** Every review cited by a finding, so the report is self-contained. */
   reviews: z.array(Review).default([]),
+  /** One section per discipline the clinic offers. */
+  disciplines: z.array(DisciplineSection).default([]),
 });
 export type Report = z.infer<typeof Report>;

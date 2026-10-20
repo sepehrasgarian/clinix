@@ -47,6 +47,12 @@ export const CHAT_TOOLS: ToolDef[] = [
     strict: true,
   },
   {
+    name: "get_discipline_sections",
+    description: "The latest report's section for each discipline the clinic offers: local leader, patient demand, what holds the clinic back, and that discipline's actions.",
+    input_schema: { type: "object", properties: {}, required: [], additionalProperties: false },
+    strict: true,
+  },
+  {
     name: "compare_latest_two",
     description: "What changed between the latest report and the one before it. Empty when there is only one report.",
     input_schema: { type: "object", properties: {}, required: [], additionalProperties: false },
@@ -92,6 +98,8 @@ export function runTool(name: string, input: Record<string, unknown>, ctx: ChatC
       return { overall: latest.scorecard.overall, summary: latest.scorecard.summary, dimensions: latest.scorecard.dimensions };
     case "get_action_plan":
       return latest.recommendations.map((r, i) => ({ rank: i + 1, id: r.id, title: r.title, status: r.status, horizon: r.horizon, impact: r.impact, effort: r.effort, firstStep: r.firstStep, findingIds: r.findingIds }));
+    case "get_discipline_sections":
+      return latest.disciplines.map((d) => ({ discipline: d.discipline, summary: d.summary, leader: d.leader ?? null, patientDemand: d.patientDemand, statements: d.statements, actions: d.recommendations.map((r) => ({ id: r.id, title: r.title, status: r.status, findingIds: r.findingIds })) }));
     case "compare_latest_two":
       return latest.diff ?? { note: "Only one report so far. The next analysis will compare against it." };
     default:

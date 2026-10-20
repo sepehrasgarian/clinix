@@ -1,12 +1,13 @@
-import type { Analysis, Clinic, Competitor, Finding, Place, PhaseId, Report, Review } from "@clinix/contracts";
+import type { Analysis, Clinic, Competitor, DisciplineSection, Finding, Place, PhaseId, Report, Review } from "@clinix/contracts";
 import { latestSucceeded } from "../db/analyses.js";
-import { ledgerFor } from "../lib/citations.js";
+import { dedupeFindings, ledgerFor } from "../lib/citations.js";
 import { buildRunDiff } from "../lib/diff.js";
 import { isNewClinic } from "../lib/hints.js";
 import { nowIso } from "../lib/ids.js";
+import { log } from "../lib/log.js";
 import { buildScorecard, type Peer } from "../lib/scorecard.js";
 import type { PipelineDeps } from "./deps.js";
-import { mineAll, type Business } from "./mine.js";
+import { assignCompetitors, mineDiscipline, writeDisciplineSection } from "./disciplineAgent.js";
 import { collectReviews } from "./reviews.js";
 import { synthesizePlan } from "./synthesize.js";
 
@@ -16,7 +17,12 @@ export const MIN_REVIEWS_SOLID = 10;
 
 export type DeepHooks = { onPhase: (phase: Extract<PhaseId, "reviews" | "mine" | "synthesize">, fn: () => Promise<void>) => Promise<void> };
 
-/** Phases 5-7 for one analysis that has a scan and a confirmed competitor selection. */
+/**
+ * Phases 5-7. One discipline agent per discipline the clinic offers reads the clinic's and its
+ * rivals' reviews through that discipline's guide, all in parallel. The report agent then writes
+ * the clinic-wide plan from the verified findings, and each discipline agent writes its own
+ * section given that plan, again in parallel.
+ */
 export async function runDeepAnalysis(clinic: Clinic, analysis: Analysis, deps: PipelineDeps, hooks: DeepHooks): Promise<Report> {
   const scan = analysis.scan;
   const discovery = analysis.discovery;
@@ -30,6 +36,7 @@ export async function runDeepAnalysis(clinic: Clinic, analysis: Analysis, deps: 
   await hooks.onPhase("reviews", async () => {
     reviewsByPlace = await collectReviews(places, deps);
   });
+  const ownReviews = reviewsByPlace.get(scan.place.placeId) ?? [];
 
   const competitors: Competitor[] = chosen.map((c) => ({
     placeId: c.place.placeId,
@@ -42,23 +49,52 @@ export async function runDeepAnalysis(clinic: Clinic, analysis: Analysis, deps: 
     reviewsAnalyzed: reviewsByPlace.get(c.place.placeId)?.length ?? 0,
   }));
   const thinReport = competitors.filter((c) => c.reviewsAnalyzed >= MIN_REVIEWS_SOLID).length < MIN_SOLID_COMPETITORS;
+  const byDiscipline = assignCompetitors(clinic.disciplines, competitors);
 
   let findings: Finding[] = [];
   await hooks.onPhase("mine", async () => {
-    const businesses: Business[] = [
-      { placeId: null, name: clinic.name, discipline: clinic.disciplines[0], reviews: reviewsByPlace.get(scan.place.placeId) ?? [] },
-      ...chosen.map((c) => ({ placeId: c.place.placeId, name: c.place.name, discipline: c.disciplines.find((d) => clinic.disciplines.includes(d)) ?? c.disciplines[0] ?? clinic.disciplines[0], reviews: reviewsByPlace.get(c.place.placeId) ?? [] })),
-    ];
-    findings = await mineAll(clinic, businesses, deps);
+    const t0 = Date.now();
+    const perDiscipline = await Promise.all(
+      clinic.disciplines.map((discipline) =>
+        mineDiscipline(
+          clinic,
+          { discipline, ownReviews, competitors: (byDiscipline.get(discipline) ?? []).map((competitor) => ({ competitor, reviews: reviewsByPlace.get(competitor.placeId) ?? [] })) },
+          deps,
+        ),
+      ),
+    );
+    findings = dedupeFindings(perDiscipline.flat());
+    log.info({ analysisId: analysis.id, disciplines: clinic.disciplines.length, findings: findings.length, ms: Date.now() - t0 }, "discipline agents finished mining");
   });
 
   const isNew = isNewClinic(clinic.opened);
   const peers: Peer[] = chosen.map((c, i) => ({ place: c.place, reviews: reviewsByPlace.get(c.place.placeId) ?? [], competitor: competitors[i] }));
-  const scorecard = buildScorecard({ place: scan.place, reviews: reviewsByPlace.get(scan.place.placeId) ?? [], understanding: scan.understanding, isNew }, peers);
+  const scorecard = buildScorecard({ place: scan.place, reviews: ownReviews, understanding: scan.understanding, isNew }, peers);
 
   let report!: Report;
   await hooks.onPhase("synthesize", async () => {
     const plan = await synthesizePlan(clinic, findings, scorecard, nameOf, isNew, deps);
+    const sections: DisciplineSection[] = await Promise.all(
+      clinic.disciplines.map((discipline) =>
+        writeDisciplineSection(
+          clinic,
+          {
+            discipline,
+            competitors: byDiscipline.get(discipline) ?? [],
+            findings: findings.filter((f) => f.discipline === discipline),
+            clinicPlan: plan.recommendations,
+            rating: scan.place.rating,
+            reviewCount: scan.place.reviewCount,
+            positioning: scan.understanding.positioning,
+          },
+          deps,
+        ).catch((err) => {
+          log.warn({ analysisId: analysis.id, discipline, err: err instanceof Error ? { message: err.message } : String(err) }, "discipline section skipped");
+          return null;
+        }),
+      ),
+    ).then((all) => all.filter((s): s is DisciplineSection => s !== null));
+
     const citedIds = new Set(findings.flatMap((f) => f.evidence.map((e) => e.reviewId)));
     const reviews = [...reviewsByPlace.values()].flat().filter((r) => citedIds.has(r.id));
     report = {
@@ -73,6 +109,7 @@ export async function runDeepAnalysis(clinic: Clinic, analysis: Analysis, deps: 
       ledger: ledgerFor(findings),
       thinReport,
       reviews,
+      disciplines: sections,
     };
     const previous = await latestSucceeded(clinic.id, analysis.id);
     if (previous?.report) {

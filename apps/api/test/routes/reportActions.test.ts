@@ -35,6 +35,12 @@ describe("recommendation status", () => {
     expect(((await ok.json()) as { status: string }).status).toBe("in_progress");
     expect((await getAnalysis(a.id))?.report?.recommendations.find((r) => r.id === "rec_saturday")?.status).toBe("in_progress");
 
+    // an action inside a discipline section is tracked the same way
+    const disc = await app.request(`/api/clinics/${clinic.id}/analyses/${a.id}/recommendations/rec_d_sat`, { method: "PATCH", headers: auth, body: JSON.stringify({ status: "done" }) });
+    expect(disc.status).toBe(200);
+    expect(((await disc.json()) as { id: string; status: string })).toMatchObject({ id: "rec_d_sat", status: "done" });
+    expect((await getAnalysis(a.id))?.report?.disciplines[0].recommendations.find((r) => r.id === "rec_d_sat")?.status).toBe("done");
+
     expect((await app.request(`/api/clinics/${clinic.id}/analyses/${a.id}/recommendations/rec_nope`, { method: "PATCH", headers: auth, body: JSON.stringify({ status: "done" }) })).status).toBe(404);
     expect((await app.request(`/api/clinics/${clinic.id}/analyses/${a.id}/recommendations/rec_saturday`, { method: "PATCH", headers: auth, body: JSON.stringify({ status: "later" }) })).status).toBe(400);
     expect((await app.request(`/api/clinics/${clinic.id}/analyses/${a.id}/recommendations/rec_saturday`, { method: "PATCH", headers: { "x-user-id": "user_2", "content-type": "application/json" }, body: JSON.stringify({ status: "done" }) })).status).toBe(404);

@@ -16,6 +16,16 @@ function fakeAi() {
   return {
     readWeb: vi.fn(),
     structured: vi.fn(async ({ user }: { user: string }) => {
+      if (user.startsWith("# Discipline")) {
+        const ids = [...user.matchAll(/\[(f_[a-z0-9]+)\]/g)].map((m) => m[1]);
+        return {
+          summary: "Section summary.",
+          leader: null,
+          patientDemand: ["cleanings"],
+          statements: ids.length ? [{ text: "A statement.", findingIds: [ids[0]] }] : [],
+          recommendations: ids.length ? [{ title: "Do one discipline thing", rationale: "r", impact: "medium", effort: "low", horizon: "now", firstStep: "s", expectedOutcome: "o", findingIds: [ids[0]] }] : [],
+        };
+      }
       if (user.includes("VERIFIED FINDINGS")) {
         const ids = [...user.matchAll(/\[(f_[a-z0-9]+)\]/g)].map((m) => m[1]);
         return {
@@ -93,6 +103,9 @@ describe("deep analysis", () => {
     expect(report.reviews.every((r) => report.findings.some((f) => f.evidence.some((e) => e.reviewId === r.id)))).toBe(true);
     expect(report.thinReport).toBe(true); // fixture competitors have 3-4 reviews each
     expect(report.diff).toBeUndefined();
+    expect(report.disciplines).toHaveLength(1);
+    expect(report.disciplines[0]).toMatchObject({ discipline: "dentistry", summary: "Section summary." });
+    expect(report.disciplines[0].recommendations[0].disciplines).toEqual(["dentistry"]);
   });
 
   it("falls back to Google sample reviews when the review source fails, and still finishes", async () => {

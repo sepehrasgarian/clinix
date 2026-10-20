@@ -6,7 +6,7 @@ const ctx = { reports: [fixtureAnalysis] };
 
 describe("chat tools", () => {
   it("expose only read tools plus answer, all strict", () => {
-    expect(CHAT_TOOLS.map((t) => t.name)).toEqual(["list_reports", "get_findings", "get_reviews", "get_scorecard", "get_action_plan", "compare_latest_two", "answer"]);
+    expect(CHAT_TOOLS.map((t) => t.name)).toEqual(["list_reports", "get_findings", "get_reviews", "get_scorecard", "get_action_plan", "get_discipline_sections", "compare_latest_two", "answer"]);
     expect(CHAT_TOOLS.every((t) => t.strict)).toBe(true);
   });
   it("get_findings filters by competitor, kind and own clinic, and returns only kept findings", () => {
@@ -32,6 +32,7 @@ describe("chat tools", () => {
     expect(runTool("get_scorecard", {}, ctx)).toMatchObject({ overall: 58 });
     expect((runTool("get_action_plan", {}, ctx) as { rank: number }[])[0].rank).toBe(1);
     expect(runTool("compare_latest_two", {}, ctx)).toMatchObject({ previousAnalysisId: "analysis_demo_1" });
+    expect((runTool("get_discipline_sections", {}, ctx) as { discipline: string }[])[0].discipline).toBe("dentistry");
   });
   it("says so when there is no report, and citedReviews resolves ids", () => {
     expect(runTool("get_findings", { competitor: null, kind: null, aboutOwnClinic: null }, { reports: [] })).toMatchObject({ error: expect.stringMatching(/no finished report/i) });

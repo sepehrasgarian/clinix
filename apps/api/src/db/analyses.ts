@@ -140,12 +140,25 @@ export async function saveReport(id: string, report: Report): Promise<void> {
   await db.update(rid("analysis", id)).merge({ report, updatedAt: nowIso() });
 }
 
-/** Updates one recommendation's status inside a stored report. Returns null when the analysis or recommendation is unknown. */
+/**
+ * Updates one recommendation's status inside a stored report, whether it sits in the clinic-wide
+ * plan or in a discipline section. Returns null when the analysis or recommendation is unknown.
+ */
 export async function setRecommendationStatus(id: string, recommendationId: string, status: Report["recommendations"][number]["status"]): Promise<Report | null> {
   const current = await getAnalysis(id);
   if (!current?.report) return null;
-  if (!current.report.recommendations.some((r) => r.id === recommendationId)) return null;
-  const report: Report = { ...current.report, recommendations: current.report.recommendations.map((r) => (r.id === recommendationId ? { ...r, status } : r)) };
+  const everywhere = [...current.report.recommendations, ...current.report.disciplines.flatMap((d) => d.recommendations)];
+  if (!everywhere.some((r) => r.id === recommendationId)) return null;
+  const mark = <T extends { id: string; status: typeof status }>(r: T): T => (r.id === recommendationId ? { ...r, status } : r);
+  const report: Report = {
+    ...current.report,
+    recommendations: current.report.recommendations.map(mark),
+    disciplines: current.report.disciplines.map((d) => ({ ...d, recommendations: d.recommendations.map(mark) })),
+  };
   await saveReport(id, report);
   return report;
 }
+
+/** One recommendation by id, from the clinic-wide plan or any discipline section. */
+export const findRecommendation = (report: Report, recommendationId: string) =>
+  [...report.recommendations, ...report.disciplines.flatMap((d) => d.recommendations)].find((r) => r.id === recommendationId);

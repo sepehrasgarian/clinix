@@ -275,6 +275,22 @@ export const fixtureReport: Report = {
     },
   ],
   reviews: fixtureReviews,
+  disciplines: [
+    {
+      discipline: "dentistry",
+      leader: { placeId: "place_yonge_smile", name: "Yonge Smile Studio", reason: "Most reviews nearby and praised for booking and Saturday hours." },
+      patientDemand: ["cleanings and check-ups", "Invisalign", "emergency visits"],
+      statements: [
+        { text: "Yonge Smile Studio wins patients on online booking and Saturday hours; nothing on your listing offers either.", findingIds: ["f_booking"] },
+        { text: "Sheppard Centre Dentistry is chosen for same-day emergencies while your emergency service is not advertised.", findingIds: ["f_emergency"] },
+      ],
+      recommendations: [
+        { id: "rec_d_sat", title: "Open one Saturday a month and say so on Google", rationale: "Saturday hours are the stated reason patients pick Yonge Smile Studio.", impact: "high", effort: "medium", horizon: "30d", firstStep: "Pick the first Saturday of next month and add it to your Google hours.", expectedOutcome: "New-patient bookings on weekends.", findingIds: ["f_booking"], disciplines: ["dentistry"], status: "todo" },
+      ],
+      summary: "You match the neighbourhood on care and lose on convenience: booking, hours and visible emergency care.",
+      competitorPlaceIds: ["place_yonge_smile", "place_willowdale", "place_sheppard", "place_bayview"],
+    },
+  ],
   ledger: {
     proposed: 8,
     kept: 6,
