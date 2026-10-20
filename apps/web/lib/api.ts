@@ -1,4 +1,4 @@
-import type { Analysis, Clinic, ClinicInput, DiscoveryResult, Place, Recommendation, Report } from "@clinix/contracts";
+import type { Analysis, ChatMessage, Clinic, ClinicInput, DiscoveryResult, Place, Recommendation, Report, Review } from "@clinix/contracts";
 import { identityHeaders } from "./identity";
 
 /**
@@ -85,3 +85,10 @@ export const addCompetitor = (clinicId: string, analysisId: string, query: strin
 
 export const retryAnalysis = (clinicId: string, analysisId: string): Promise<Analysis> =>
   post<Analysis>(`/clinics/${clinicId}/analyses/${analysisId}/retry`);
+
+// ---- Ask ClinX ----
+
+export type ChatHistory = { messages: ChatMessage[]; reviews: Review[] };
+export const getChatHistory = (clinicId: string): Promise<ChatHistory> => get<ChatHistory>(`/clinics/${clinicId}/chat`);
+export const sendChatMessage = (clinicId: string, message: string): Promise<{ answer: ChatMessage; reviews: Review[] }> =>
+  post(`/clinics/${clinicId}/chat`, { message });
