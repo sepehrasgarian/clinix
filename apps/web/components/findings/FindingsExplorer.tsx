@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import clsx from "clsx";
 import { DISCIPLINE_LABELS, type Finding, type Report, type Review } from "@clinix/contracts";
+import { DisciplineBadge } from "@/components/ui/DisciplineBadge";
 import { LedgerCounter } from "@/components/ui/LedgerCounter";
 import { Dot, Pill } from "@/components/ui/Pill";
 import { EmptyState } from "@/components/ui/PageHeader";
@@ -59,7 +60,7 @@ export function FindingsExplorer({ report, reviews, clinicName }: { report: Repo
           <nav aria-label="Findings" className="flex flex-col gap-4">
             {byDiscipline.map(([discipline, items]) => (
               <section key={discipline}>
-                <h2 className="mb-2 px-1 text-xs font-semibold tracking-wide text-faint uppercase">{DISCIPLINE_LABELS[discipline as keyof typeof DISCIPLINE_LABELS]}</h2>
+                <h2 className="mb-2 px-1"><DisciplineBadge discipline={discipline as keyof typeof DISCIPLINE_LABELS} /></h2>
                 <ul className="flex flex-col gap-1.5">
                   {items.map((f) => {
                     const active = selected?.id === f.id;

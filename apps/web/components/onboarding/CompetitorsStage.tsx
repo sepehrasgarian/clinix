@@ -10,6 +10,7 @@ import { Stars } from "@/components/ui/Stars";
 import { copy } from "@/lib/copy";
 import { formatKm } from "@/lib/format";
 import { PrimaryButton, SetupFrame } from "./SetupFrame";
+import { Sticker } from "./Sticker";
 
 export const PER_DISCIPLINE_MAX = 5;
 
@@ -45,14 +46,22 @@ export function CompetitorsStage({ analysis, disciplines, onConfirm, onAdd, busy
       intro={copy.onboarding.competitors.intro}
       status={`${selected.length} ${copy.onboarding.competitors.selected}`}
       action={<PrimaryButton onClick={() => onConfirm(selected)} disabled={selected.length === 0 || busy}>{busy ? copy.onboarding.competitors.starting : copy.onboarding.competitors.start}</PrimaryButton>}
+      aside={
+        <Card className="p-5">
+          <h2 className="font-semibold">Why you choose</h2>
+          <p className="mt-1 text-sm text-muted">You know your street better than any search. We suggest the closest matches; you decide who matters. The ones you keep are read in depth, up to five per discipline.</p>
+          <p className="mt-3 text-xs text-muted">{discovery.candidates.length} candidates found · {selected.length} chosen</p>
+        </Card>
+      }
     >
       <div className="flex flex-col gap-6">
         {grouped.map(({ d, items }) => {
           const n = countPerDiscipline(discovery.candidates, selected, d);
           return (
             <section key={d} aria-labelledby={`disc-${d}`}>
-              <h2 id={`disc-${d}`} className="mb-3 flex items-baseline gap-2 font-semibold">
-                {DISCIPLINE_LABELS[d]} <span className={clsx("font-mono text-xs", n >= PER_DISCIPLINE_MAX ? "text-warning" : "text-faint")}>{n} / {PER_DISCIPLINE_MAX}</span>
+              <h2 id={`disc-${d}`} className="mb-3 flex items-center gap-3 font-semibold">
+                <Sticker discipline={d} size={32} tilt={false} />
+                {DISCIPLINE_LABELS[d]} <span className={clsx("font-mono text-xs", n >= PER_DISCIPLINE_MAX ? "text-warning" : "text-faint")}>{n} / {PER_DISCIPLINE_MAX} chosen</span>
               </h2>
               <ul className="grid gap-3 md:grid-cols-2">
                 {items.map((c) => {

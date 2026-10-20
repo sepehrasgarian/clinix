@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Analysis, Clinic, ClinicInput } from "@clinix/contracts";
 import { addCompetitor, claimClinic, confirmCompetitors, confirmServices, createClinic, getAnalysis, retryAnalysis, startAnalysis } from "@/lib/api";
-import { getGuestId, isGuest, setDevUser } from "@/lib/identity";
+import { DEV_USER_ID, getGuestId, isGuest, setDevUser } from "@/lib/identity";
 import { ClinicForm } from "./ClinicForm";
 import { CompetitorsStage } from "./CompetitorsStage";
 import { FoundStage } from "./FoundStage";
@@ -104,14 +104,14 @@ export function OnboardingFlow() {
   const { clinic } = saved;
 
   if (analysis.stage === "quick_scan" && (analysis.status === "queued" || analysis.status === "running" || analysis.status === "failed")) {
-    return <ScanningStage analysis={analysis} retrying={busy} onRetry={() => run(async () => setAnalysis(await retryAnalysis(clinic.id, analysis.id)))} />;
+    return <ScanningStage analysis={analysis} disciplines={clinic.disciplines} retrying={busy} onRetry={() => run(async () => setAnalysis(await retryAnalysis(clinic.id, analysis.id)))} />;
   }
   if (analysis.status === "awaiting_services" && analysis.scan) {
     // Until Clerk lands on Day 4, "create an account" signs in as the dev user and claims the guest clinic.
     const createAccount = () =>
       run(async () => {
         const guestId = getGuestId();
-        setDevUser("dev");
+        setDevUser(DEV_USER_ID);
         const claimed = await claimClinic(clinic.id, guestId);
         persist({ clinic: claimed, analysisId: analysis.id });
         setGuest(false);
@@ -119,6 +119,7 @@ export function OnboardingFlow() {
     return (
       <FoundStage
         analysis={analysis}
+        disciplines={clinic.disciplines}
         busy={busy}
         guest={guest}
         onCreateAccount={createAccount}
@@ -127,7 +128,7 @@ export function OnboardingFlow() {
     );
   }
   if (analysis.stage === "discovery" && analysis.status !== "awaiting_competitors") {
-    return <ScanningStage analysis={analysis} retrying={busy} onRetry={() => run(async () => setAnalysis(await retryAnalysis(clinic.id, analysis.id)))} />;
+    return <ScanningStage analysis={analysis} disciplines={clinic.disciplines} retrying={busy} onRetry={() => run(async () => setAnalysis(await retryAnalysis(clinic.id, analysis.id)))} />;
   }
   if (analysis.status === "awaiting_competitors" && analysis.discovery) {
     return (

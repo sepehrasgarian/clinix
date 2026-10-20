@@ -21,7 +21,7 @@ export function ListingCard({ place, services, market, disciplines = [] }: { pla
       : fill(copy.onboarding.marketCardQuiet, { nearby: String(market.nearby), discipline: disciplineWord })
     : null;
   return (
-    <Card className="overflow-hidden" data-testid="listing-card">
+    <Card className="overflow-hidden border-line/70 bg-surface/40" data-testid="listing-card">
       {place.photoName ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={photoUrl(place.photoName)} alt="" className="h-40 w-full object-cover" />

@@ -17,7 +17,7 @@ describe("CompetitorsStage", () => {
 
   it("refuses a sixth competitor in one discipline and allows swapping", () => {
     render(<CompetitorsStage analysis={analysis} disciplines={["dentistry"]} onConfirm={vi.fn()} />);
-    expect(screen.getByText("5 / 5")).toBeInTheDocument();
+    expect(screen.getByText("5 / 5 chosen")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Clinic 5/ }));
     expect(screen.getByRole("button", { name: /Clinic 5/ })).toHaveAttribute("aria-pressed", "false");
     fireEvent.click(screen.getByRole("button", { name: /Clinic 0/ }));
