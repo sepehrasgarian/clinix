@@ -64,6 +64,14 @@ describe("gatherCandidates", () => {
 });
 
 describe("rankCandidates", () => {
+  it("drops discipline ids the model invented and falls back to the clinic's own", async () => {
+    const d = deps({ rankings: [{ id: "p_a", relevance: 90, flag: "strong", reason: "ok", disciplines: ["sports_physio", "dentistry"] }, { id: "p_b", relevance: 60, flag: "strong", reason: "ok", disciplines: ["general_medicine"] }] });
+    const found = await gatherCandidates(clinic, center, ["cleaning"], d);
+    const ranked = await rankCandidates(clinic, clinic.services, found, d);
+    expect(ranked.find((c) => c.place.placeId === "p_a")?.disciplines).toEqual(["dentistry"]);
+    expect(ranked.find((c) => c.place.placeId === "p_b")?.disciplines).toEqual(clinic.disciplines);
+  });
+
   it("merges model rankings, defaults unranked ones to borderline, and sorts by relevance", async () => {
     const d = deps();
     const found = await gatherCandidates(clinic, center, ["cleaning"], d);
@@ -104,6 +112,13 @@ describe("autoSelect and validateSelection", () => {
     expect(picked).toEqual(["d0", "d1", "d2", "d3", "d4"]);
     const few = autoSelect([thin, cand("d0", "strong", ["dentistry"], 90)], ["dentistry"]);
     expect(few).toEqual(["d0", "thin"]);
+  });
+  it("counts a competitor under one discipline only, so a multi-discipline clinic never double-counts", () => {
+    const multi = Array.from({ length: 5 }, (_, i) => cand(`m${i}`, "strong", ["dentistry", "dental_hygiene"], 90 - i));
+    const hygiene = [cand("h2", "strong", ["dental_hygiene"], 80), cand("h3", "strong", ["dental_hygiene"], 70)];
+    const picked = autoSelect([...multi, ...hygiene], ["dentistry", "dental_hygiene"]);
+    expect(picked).toEqual(["m0", "m1", "m2", "m3", "m4", "h2", "h3"]);
+    expect(validateSelection([...multi, ...hygiene], picked, ["dentistry", "dental_hygiene"])).toBeNull();
   });
   it("validates owner selections", () => {
     expect(validateSelection(candidates, ["d0", "h1"], ["dentistry", "dental_hygiene"])).toBeNull();

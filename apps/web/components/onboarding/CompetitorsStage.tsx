@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import clsx from "clsx";
 import { Check } from "lucide-react";
-import { DISCIPLINE_LABELS, type Analysis, type CompetitorCandidate, type Discipline } from "@clinix/contracts";
+import { DISCIPLINE_LABELS, primaryDiscipline, type Analysis, type CompetitorCandidate, type Discipline } from "@clinix/contracts";
 import { Card } from "@/components/ui/Card";
 import { Pill } from "@/components/ui/Pill";
 import { Stars } from "@/components/ui/Stars";
@@ -14,8 +14,8 @@ import { Sticker } from "./Sticker";
 
 export const PER_DISCIPLINE_MAX = 5;
 
-export function countPerDiscipline(candidates: CompetitorCandidate[], selected: string[], d: Discipline): number {
-  return candidates.filter((c) => selected.includes(c.place.placeId) && c.disciplines.includes(d)).length;
+export function countPerDiscipline(candidates: CompetitorCandidate[], selected: string[], d: Discipline, ownerDisciplines: Discipline[] = [d]): number {
+  return candidates.filter((c) => selected.includes(c.place.placeId) && primaryDiscipline(c.disciplines, ownerDisciplines) === d).length;
 }
 
 /** Step 3 of 4: the owner confirms up to five competitors per discipline (checkpoint 2). */
@@ -25,15 +25,18 @@ export function CompetitorsStage({ analysis, disciplines, onConfirm, onAdd, onBa
   const [missed, setMissed] = useState("");
   const [adding, setAdding] = useState(false);
 
+  // Each competitor appears under exactly one discipline, so the "five per discipline" cap is unambiguous.
   const grouped = useMemo(
-    () => disciplines.map((d) => ({ d, items: discovery.candidates.filter((c) => c.disciplines.includes(d)) })).filter((g) => g.items.length),
+    () => disciplines.map((d) => ({ d, items: discovery.candidates.filter((c) => primaryDiscipline(c.disciplines, disciplines) === d) })).filter((g) => g.items.length),
     [discovery.candidates, disciplines],
   );
+  const [tab, setTab] = useState<Discipline | null>(null);
+  const active = grouped.find((g) => g.d === tab) ?? grouped[0];
 
   const toggle = (c: CompetitorCandidate) => {
     if (selected.includes(c.place.placeId)) return setSelected(selected.filter((id) => id !== c.place.placeId));
-    const full = c.disciplines.some((d) => disciplines.includes(d) && countPerDiscipline(discovery.candidates, selected, d) >= PER_DISCIPLINE_MAX);
-    if (!full) setSelected([...selected, c.place.placeId]);
+    const d = primaryDiscipline(c.disciplines, disciplines);
+    if (countPerDiscipline(discovery.candidates, selected, d, disciplines) < PER_DISCIPLINE_MAX) setSelected([...selected, c.place.placeId]);
   };
 
   const flagTone = { strong: "success", borderline: "warning", irrelevant: "neutral" } as const;
@@ -54,11 +57,26 @@ export function CompetitorsStage({ analysis, disciplines, onConfirm, onAdd, onBa
         </Card>
       }
     >
-      <div className="flex flex-col gap-6">
-        {grouped.map(({ d, items }) => {
-          const n = countPerDiscipline(discovery.candidates, selected, d);
+      <div className="flex flex-col gap-5">
+        {grouped.length > 1 && (
+          <div role="tablist" aria-label="Disciplines" className="flex flex-wrap gap-2">
+            {grouped.map(({ d }) => {
+              const n = countPerDiscipline(discovery.candidates, selected, d, disciplines);
+              const on = active?.d === d;
+              return (
+                <button key={d} role="tab" aria-selected={on} type="button" onClick={() => setTab(d)} className={clsx("inline-flex min-h-11 items-center gap-2 rounded-full border px-3 text-sm font-medium", on ? "border-primary bg-primary-soft text-primary" : "border-line bg-card text-muted hover:text-ink")}>
+                  <Sticker discipline={d} size={24} tilt={false} className="rounded-lg border-2" />
+                  {DISCIPLINE_LABELS[d]}
+                  <span className={clsx("font-mono text-xs", n >= PER_DISCIPLINE_MAX ? "text-warning" : "text-faint")}>{n}/{PER_DISCIPLINE_MAX}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+        {active && [active].map(({ d, items }) => {
+          const n = countPerDiscipline(discovery.candidates, selected, d, disciplines);
           return (
-            <section key={d} aria-labelledby={`disc-${d}`}>
+            <section key={d} aria-labelledby={`disc-${d}`} role="tabpanel">
               <h2 id={`disc-${d}`} className="mb-3 flex items-center gap-3 font-semibold">
                 <Sticker discipline={d} size={32} tilt={false} />
                 {DISCIPLINE_LABELS[d]} <span className={clsx("font-mono text-xs", n >= PER_DISCIPLINE_MAX ? "text-warning" : "text-faint")}>{n} / {PER_DISCIPLINE_MAX} chosen</span>

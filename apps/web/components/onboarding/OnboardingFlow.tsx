@@ -63,16 +63,27 @@ export function OnboardingFlow() {
   }, [saved]);
 
   // Poll while the pipeline is working; stop at checkpoints and terminal states.
+  // Keyed on the status, not the analysis object, so a refreshed object never restarts the timer.
+  const status = analysis?.status ?? null;
   useEffect(() => {
     if (!saved) return;
     const first = setTimeout(refresh, 0);
-    const active = !analysis || analysis.status === "queued" || analysis.status === "running";
+    const active = status === null || status === "queued" || status === "running";
     const handle = active ? setInterval(refresh, POLL_MS) : undefined;
     return () => {
       clearTimeout(first);
       if (handle) clearInterval(handle);
     };
-  }, [saved, analysis, refresh]);
+  }, [saved, status, refresh]);
+
+  // Deep stage or finished: the run view takes over. Navigation happens in an effect, never during render.
+  const handoff =
+    saved && analysis && backTo === null && (analysis.stage === "deep" || analysis.status === "succeeded")
+      ? `/app/clinics/${saved.clinic.id}/run/${analysis.id}`
+      : null;
+  useEffect(() => {
+    if (handoff) router.replace(handoff);
+  }, [handoff, router]);
 
   const run = async (fn: () => Promise<void>) => {
     setBusy(true);
@@ -157,7 +168,5 @@ export function OnboardingFlow() {
       />
     );
   }
-  // Deep stage or finished: hand over to the run view.
-  router.replace(`/app/clinics/${clinic.id}/run/${analysis.id}`);
-  return null;
+  return <p className="p-8 text-sm text-muted">Opening your report…</p>;
 }

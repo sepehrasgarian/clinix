@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Discipline, type Clinic, type CompetitorCandidate, type DiscoveryResult, type Place } from "@clinix/contracts";
+import { Discipline, primaryDiscipline, type Clinic, type CompetitorCandidate, type DiscoveryResult, type Place } from "@clinix/contracts";
 import { classifyBusiness } from "../clients/places.js";
 import { preferSameDiscipline } from "../lib/disciplineTypes.js";
 import { distanceKm, ringFor } from "../lib/geo.js";
@@ -51,7 +51,7 @@ const RankOutput = z.object({
       relevance: z.number().min(0).max(100),
       flag: z.enum(["strong", "borderline", "irrelevant"]),
       reason: z.string(),
-      disciplines: z.array(Discipline),
+      disciplines: z.array(z.string()).describe("Discipline ids from the allowed list only"),
     }),
   ),
 });
@@ -71,6 +71,8 @@ export async function rankCandidates(clinic: Clinic, services: string[], found: 
   }));
   const { rankings } = await deps.ai.structured({ schema: RankOutput, system: rankSystem(clinic.disciplines, clinic.city), user: rankUser(clinic.name, services, inputs), tier: "light" });
   const byId = new Map(rankings.map((r) => [r.id, r]));
+  // The model sometimes invents an id; keep the known ones and fall back to the clinic's own disciplines.
+  const known = (ids: string[]): Discipline[] => ids.filter((d): d is Discipline => Discipline.options.includes(d as Discipline));
 
   return found
     .map((f) => {
@@ -82,7 +84,7 @@ export async function rankCandidates(clinic: Clinic, services: string[], found: 
         relevance: r?.relevance ?? 50,
         flag: r?.flag ?? "borderline",
         reason: r?.reason ?? "Not reviewed; found by a service search nearby.",
-        disciplines: r?.disciplines?.length ? r.disciplines : clinic.disciplines,
+        disciplines: known(r?.disciplines ?? []).length ? known(r!.disciplines) : clinic.disciplines,
       } satisfies CompetitorCandidate;
     })
     .sort((a, b) => b.relevance - a.relevance || a.distanceKm - b.distanceKm);
@@ -102,7 +104,7 @@ export function autoSelect(candidates: CompetitorCandidate[], disciplines: Disci
   };
   for (const d of disciplines) {
     candidates
-      .filter((c) => c.flag !== "irrelevant" && c.disciplines.includes(d) && !selected.has(c.place.placeId))
+      .filter((c) => c.flag !== "irrelevant" && primaryDiscipline(c.disciplines, disciplines) === d)
       .sort((a, b) => tier(a) - tier(b) || b.relevance - a.relevance)
       .slice(0, PER_DISCIPLINE_MAX)
       .forEach((c) => selected.add(c.place.placeId));
@@ -117,7 +119,7 @@ export function validateSelection(candidates: CompetitorCandidate[], placeIds: s
   if (unknown.length) return `Unknown competitor: ${unknown[0]}`;
   if (placeIds.length === 0) return "Pick at least one competitor.";
   for (const d of disciplines) {
-    const n = placeIds.filter((id) => known.get(id)!.disciplines.includes(d)).length;
+    const n = placeIds.filter((id) => primaryDiscipline(known.get(id)!.disciplines, disciplines) === d).length;
     if (n > PER_DISCIPLINE_MAX) return `Pick at most ${PER_DISCIPLINE_MAX} competitors for ${d}.`;
   }
   return null;

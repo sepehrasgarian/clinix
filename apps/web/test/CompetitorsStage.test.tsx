@@ -31,4 +31,17 @@ describe("CompetitorsStage", () => {
     fireEvent.click(screen.getByRole("button", { name: /start the full analysis/i }));
     expect(onConfirm).toHaveBeenCalledWith(["p0", "p1", "p2", "p3", "p4"]);
   });
+
+  it("shows one tab per discipline, each competitor under one discipline only", () => {
+    const multi = { ...cand(9), disciplines: ["dentistry" as const, "dental_hygiene" as const] };
+    const hyg = { ...cand(10), disciplines: ["dental_hygiene" as const] };
+    const a: Analysis = { ...analysis, discovery: { candidates: [multi, hyg], selectedPlaceIds: ["p9", "p10"] } };
+    render(<CompetitorsStage analysis={a} disciplines={["dentistry", "dental_hygiene"]} onConfirm={vi.fn()} />);
+    const tabs = screen.getAllByRole("tab");
+    expect(tabs.map((t) => t.textContent)).toEqual([expect.stringMatching(/Dentistry.*1\/5/), expect.stringMatching(/Dental hygiene.*1\/5/)]);
+    expect(screen.getByRole("button", { name: /Clinic 9/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Clinic 10/ })).toBeNull();
+    fireEvent.click(tabs[1]);
+    expect(screen.getByRole("button", { name: /Clinic 10/ })).toBeInTheDocument();
+  });
 });
