@@ -7,17 +7,27 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { ScoreBar } from "@/components/ui/ScoreBar";
 import { copy } from "@/lib/copy";
 import { formatKm, toneForLevel } from "@/lib/format";
-import { getReport, listClinics } from "@/lib/api";
+import { ActionStatus } from "@/components/report/ActionStatus";
+import { EmptyReport } from "@/components/report/EmptyReport";
+import { getInProgress, getLatestReport, listClinics } from "@/lib/api";
 
 const impactRank = { high: 3, medium: 2, low: 1 } as const;
 const effortRank = { low: 3, medium: 2, high: 1 } as const;
 
-export const metadata: Metadata = { title: "Dashboard – Clinix" };
+export const metadata: Metadata = { title: "Dashboard – ClinX" };
 
 export default async function DashboardPage() {
   const [clinic] = await listClinics();
-  const report = await getReport(clinic.id);
-  if (!report) return <PageHeader title={copy.dashboard.title} intro="Your first report is on its way." />;
+  const latest = await getLatestReport(clinic.id);
+  if (!latest) {
+    return (
+      <>
+        <PageHeader title={copy.dashboard.title} />
+        <EmptyReport clinicId={clinic.id} inProgress={await getInProgress(clinic.id)} />
+      </>
+    );
+  }
+  const { report, analysis } = latest;
 
   const nextMoves = [...report.recommendations]
     .filter((r) => r.status !== "done")
@@ -56,6 +66,7 @@ export default async function DashboardPage() {
                       <Pill tone={toneForLevel(r.impact)}>{copy.actions.impact}: {r.impact}</Pill>
                       <Pill>{copy.actions.effort}: {r.effort}</Pill>
                     </div>
+                    <ActionStatus clinicId={clinic.id} analysisId={analysis.id} recommendation={r} compact />
                   </div>
                 </li>
               ))}

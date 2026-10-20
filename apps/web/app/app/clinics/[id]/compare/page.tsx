@@ -3,7 +3,8 @@ import { Card } from "@/components/ui/Card";
 import { EmptyState, PageHeader } from "@/components/ui/PageHeader";
 import { copy } from "@/lib/copy";
 import { formatDate } from "@/lib/format";
-import { getReport } from "@/lib/api";
+import { EmptyReport } from "@/components/report/EmptyReport";
+import { getInProgress, getLatestReport } from "@/lib/api";
 
 function Delta({ value, suffix = "" }: { value: number; suffix?: string }) {
   const sign = value > 0 ? "+" : "";
@@ -11,12 +12,13 @@ function Delta({ value, suffix = "" }: { value: number; suffix?: string }) {
   return <span className={`font-mono text-3xl tabular-nums ${tone}`}>{sign}{value}{suffix}</span>;
 }
 
-export const metadata: Metadata = { title: "Since last time – Clinix" };
+export const metadata: Metadata = { title: "Since last time – ClinX" };
 
 export default async function ComparePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const report = await getReport(id);
-  if (!report) return <EmptyState text="Your first report is on its way." />;
+  const latest = await getLatestReport(id);
+  if (!latest) return <EmptyReport clinicId={id} inProgress={await getInProgress(id)} />;
+  const { report } = latest;
   const diff = report.diff;
   const claim = (fid: string) => report.findings.find((f) => f.id === fid)?.claim ?? fid;
   const recTitle = (rid: string) => report.recommendations.find((r) => r.id === rid)?.title ?? rid;

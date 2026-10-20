@@ -1,13 +1,10 @@
-import type { Analysis, ChatMessage, Clinic, ClinicInput, DiscoveryResult, Place, Report, Review } from "@clinix/contracts";
-import { fixtureAnalysis, fixtureChat, fixtureClinic, fixtureReport, fixtureReviews } from "@clinix/contracts/fixtures";
+import type { Analysis, Clinic, ClinicInput, DiscoveryResult, Place, Recommendation, Report } from "@clinix/contracts";
 import { identityHeaders } from "./identity";
 
 /**
- * Data access for the app. `mock` renders from the shared fixtures with no network, so the UI
- * can be built and reviewed before the pipeline is finished. `real` talks to the API.
+ * Data access for the app. Every call goes to the API with the caller's identity.
+ * Server components act as the dev user until Clerk lands; the browser sends its guest or user id.
  */
-export type ApiMode = "mock" | "real";
-export const apiMode: ApiMode = process.env.NEXT_PUBLIC_API_MODE === "real" ? "real" : "mock";
 const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8787";
 
 const headers = () => ({ ...identityHeaders(), "content-type": "application/json" });
@@ -29,18 +26,39 @@ async function get<T>(path: string): Promise<T> {
   return (await res.json()) as T;
 }
 
-async function post<T>(path: string, body?: unknown): Promise<T> {
-  const res = await fetch(`${apiUrl}/api${path}`, { method: "POST", headers: headers(), body: body ? JSON.stringify(body) : undefined });
+async function send<T>(method: "POST" | "PATCH", path: string, body?: unknown): Promise<T> {
+  const res = await fetch(`${apiUrl}/api${path}`, { method, headers: headers(), body: body ? JSON.stringify(body) : undefined });
   if (!res.ok) throw await parseError(res);
   return (await res.json()) as T;
 }
+const post = <T,>(path: string, body?: unknown) => send<T>("POST", path, body);
+const patch = <T,>(path: string, body?: unknown) => send<T>("PATCH", path, body);
 
-export const photoUrl = (photoName: string) => `${apiUrl}/api/lookup/photo/${photoName}`;
+export const listClinics = (): Promise<Clinic[]> => get<Clinic[]>("/clinics");
 
-// ---- Onboarding and analyses always talk to the API: the quick scan is the product. ----
-// Only the report screens fall back to the fixture (until the deep stage produces real reports).
+export const getClinic = (id: string): Promise<{ clinic: Clinic; analyses: Analysis[] }> => get(`/clinics/${id}`);
 
-export const searchClinics = (q: string, city: string): Promise<Place[]> =>
+/** The latest finished report for a clinic, with the analysis it belongs to, or null before the first one completes. */
+export async function getLatestReport(clinicId: string): Promise<{ report: Report; analysis: Analysis } | null> {
+  const { analyses } = await getClinic(clinicId);
+  const done = analyses.find((a) => a.status === "succeeded" && a.report);
+  return done ? { report: done.report!, analysis: done } : null;
+}
+
+/** The analysis still in progress for a clinic, if any (for empty states that link to the run page). */
+export async function getInProgress(clinicId: string): Promise<Analysis | null> {
+  const { analyses } = await getClinic(clinicId);
+  return analyses.find((a) => a.status !== "succeeded") ?? null;
+}
+
+export const setRecommendationStatus = (clinicId: string, analysisId: string, recommendationId: string, status: Recommendation["status"]): Promise<Recommendation> =>
+  patch<Recommendation>(`/clinics/${clinicId}/analyses/${analysisId}/recommendations/${recommendationId}`, { status });
+
+export const photoUrl = (photoName: string) => `${apiUrl}/api/photo/${photoName}`;
+
+// ---- Onboarding ----
+
+export const searchClinics = (q: string, city = ""): Promise<Place[]> =>
   get<Place[]>(`/lookup/clinic-search?q=${encodeURIComponent(q)}&city=${encodeURIComponent(city)}`);
 
 export const createClinic = (input: ClinicInput): Promise<Clinic> => post<Clinic>("/clinics", input);
@@ -54,10 +72,7 @@ export const claimClinic = (clinicId: string, guestId: string): Promise<Clinic> 
 
 export const startAnalysis = (clinicId: string): Promise<Analysis> => post<Analysis>(`/clinics/${clinicId}/analyses`);
 
-export async function getAnalysis(clinicId: string, analysisId: string): Promise<Analysis> {
-  if (analysisId === fixtureAnalysis.id) return fixtureAnalysis;
-  return get<Analysis>(`/clinics/${clinicId}/analyses/${analysisId}`);
-}
+export const getAnalysis = (clinicId: string, analysisId: string): Promise<Analysis> => get<Analysis>(`/clinics/${clinicId}/analyses/${analysisId}`);
 
 export const confirmServices = (clinicId: string, analysisId: string, services: string[]): Promise<Analysis> =>
   post<Analysis>(`/clinics/${clinicId}/analyses/${analysisId}/services`, { services });
@@ -70,27 +85,3 @@ export const addCompetitor = (clinicId: string, analysisId: string, query: strin
 
 export const retryAnalysis = (clinicId: string, analysisId: string): Promise<Analysis> =>
   post<Analysis>(`/clinics/${clinicId}/analyses/${analysisId}/retry`);
-
-export async function listClinics(): Promise<Clinic[]> {
-  return apiMode === "mock" ? [fixtureClinic] : get<Clinic[]>("/clinics");
-}
-
-export async function getClinic(id: string): Promise<{ clinic: Clinic; analyses: Analysis[] }> {
-  return apiMode === "mock" ? { clinic: fixtureClinic, analyses: [fixtureAnalysis] } : get(`/clinics/${id}`);
-}
-
-/** The latest finished report for a clinic, or null before the first analysis completes. */
-export async function getReport(clinicId: string): Promise<Report | null> {
-  if (apiMode === "mock") return fixtureReport;
-  const { analyses } = await getClinic(clinicId);
-  return analyses.find((a) => a.status === "succeeded" && a.report)?.report ?? null;
-}
-
-/** Reviews cited by a report. Real reports embed them; the fixture keeps them alongside. */
-export function reviewsOf(report: Report | null): Review[] {
-  return report?.reviews?.length ? report.reviews : fixtureReviews;
-}
-
-export async function getChat(): Promise<ChatMessage[]> {
-  return fixtureChat;
-}

@@ -5,6 +5,7 @@ import { ArrowLeftRight, Building2, ClipboardList, LayoutDashboard, MessageSquar
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Clinic } from "@clinix/contracts";
+import { Logo } from "@/components/ui/Logo";
 import { copy } from "@/lib/copy";
 
 export function Sidebar({ clinic, onOpenChat }: { clinic: Clinic; onOpenChat: () => void }) {
@@ -19,10 +20,7 @@ export function Sidebar({ clinic, onOpenChat }: { clinic: Clinic; onOpenChat: ()
   ];
   return (
     <aside className="flex w-full flex-col gap-6 border-b border-line bg-card p-4 md:min-h-screen md:w-60 md:border-r md:border-b-0">
-      <Link href="/app" className="flex items-center gap-2 px-2 text-lg font-semibold tracking-tight">
-        <span aria-hidden className="inline-block size-6 rounded-md bg-primary" />
-        Clinix
-      </Link>
+      <Logo surface="light" height={22} href="/app" className="px-1" />
       <div className="rounded-xl border border-line bg-surface px-3 py-2">
         <p className="text-xs text-faint">Clinic</p>
         <p className="truncate font-medium">{clinic.name}</p>

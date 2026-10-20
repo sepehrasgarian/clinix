@@ -4,18 +4,21 @@ import type { Recommendation } from "@clinix/contracts";
 import { Card } from "@/components/ui/Card";
 import { Pill } from "@/components/ui/Pill";
 import { EmptyState, PageHeader } from "@/components/ui/PageHeader";
+import { ActionStatus } from "@/components/report/ActionStatus";
+import { EmptyReport } from "@/components/report/EmptyReport";
 import { copy } from "@/lib/copy";
 import { toneForLevel } from "@/lib/format";
-import { getReport } from "@/lib/api";
+import { getInProgress, getLatestReport } from "@/lib/api";
 
 const columns: Recommendation["status"][] = ["todo", "in_progress", "done"];
 
-export const metadata: Metadata = { title: "Action plan – Clinix" };
+export const metadata: Metadata = { title: "Action plan – ClinX" };
 
 export default async function ActionsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const report = await getReport(id);
-  if (!report) return <EmptyState text="Your first report is on its way." />;
+  const latest = await getLatestReport(id);
+  if (!latest) return <EmptyReport clinicId={id} inProgress={await getInProgress(id)} />;
+  const { report, analysis } = latest;
 
   return (
     <>
@@ -48,6 +51,7 @@ export default async function ActionsPage({ params }: { params: Promise<{ id: st
                         <dd className="text-muted">{r.expectedOutcome}</dd>
                       </div>
                     </dl>
+                    <ActionStatus clinicId={id} analysisId={analysis.id} recommendation={r} />
                     <p className="mt-3 text-xs text-muted">
                       {copy.actions.basedOn}{" "}
                       {r.findingIds.map((fid, i) => (

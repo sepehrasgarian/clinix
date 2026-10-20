@@ -32,6 +32,8 @@ export function getUserId(): string | null {
 }
 
 /** Dev-only stand-in for sign-in until Clerk lands. */
+export const DEV_USER_ID = process.env.NEXT_PUBLIC_DEV_USER_ID ?? "dev";
+
 export function setDevUser(id: string) {
   try {
     localStorage.setItem(USER_KEY, id);
@@ -43,7 +45,8 @@ export function setDevUser(id: string) {
 export const isGuest = (): boolean => getUserId() === null;
 
 export function identityHeaders(): Record<string, string> {
-  if (typeof window === "undefined") return { "x-user-id": "dev" }; // server components act as the dev user for now
+  // Server components act as the dev user until Clerk lands (configurable so a real clinic can be viewed).
+  if (typeof window === "undefined") return { "x-user-id": process.env.DEV_USER_ID ?? "dev" };
   const user = getUserId();
   return user ? { "x-user-id": user } : { "x-guest-id": getGuestId() };
 }

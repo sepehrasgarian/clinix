@@ -5,8 +5,9 @@ import { X } from "lucide-react";
 import type { ChatMessage } from "@clinix/contracts";
 import { copy } from "@/lib/copy";
 
-export function ChatDrawer({ open, onClose, initial }: { open: boolean; onClose: () => void; initial: ChatMessage[] }) {
-  const [messages, setMessages] = useState(initial);
+export function ChatDrawer({ open, onClose, clinicId }: { open: boolean; onClose: () => void; clinicId: string }) {
+  void clinicId; // wired to the chat route in the next step
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
   if (!open) return null;
 

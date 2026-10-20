@@ -1,20 +1,22 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { DISCIPLINE_LABELS } from "@clinix/contracts";
 import { Card } from "@/components/ui/Card";
+import { DisciplineBadge } from "@/components/ui/DisciplineBadge";
 import { Pill } from "@/components/ui/Pill";
-import { EmptyState, PageHeader } from "@/components/ui/PageHeader";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { Stars } from "@/components/ui/Stars";
 import { copy } from "@/lib/copy";
 import { formatKm } from "@/lib/format";
-import { getReport } from "@/lib/api";
+import { EmptyReport } from "@/components/report/EmptyReport";
+import { getInProgress, getLatestReport } from "@/lib/api";
 
-export const metadata: Metadata = { title: "Competitors – Clinix" };
+export const metadata: Metadata = { title: "Competitors – ClinX" };
 
 export default async function CompetitorsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const report = await getReport(id);
-  if (!report) return <EmptyState text="Your first report is on its way." />;
+  const latest = await getLatestReport(id);
+  if (!latest) return <EmptyReport clinicId={id} inProgress={await getInProgress(id)} />;
+  const { report } = latest;
 
   return (
     <>
@@ -37,7 +39,7 @@ export default async function CompetitorsPage({ params }: { params: Promise<{ id
                 )}
               </div>
               <div className="mt-3 flex flex-wrap gap-1.5">
-                {c.disciplines.map((d) => <Pill key={d}>{DISCIPLINE_LABELS[d]}</Pill>)}
+                {c.disciplines.map((d) => <DisciplineBadge key={d} discipline={d} />)}
                 <Pill tone="primary">{c.reviewsAnalyzed} {copy.competitors.reviewsAnalyzed}</Pill>
               </div>
               <ul className="mt-4 space-y-2 text-sm">
