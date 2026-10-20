@@ -5,7 +5,9 @@
 export const copy = {
   nav: {
     dashboard: "Dashboard",
+    report: "Report",
     findings: "Findings",
+    disciplines: "By discipline",
     actions: "Action plan",
     competitors: "Competitors",
     compare: "Since last time",
@@ -33,8 +35,8 @@ export const copy = {
     aboutYou: "About your clinic",
     confidence: { confirmed: "Confirmed", likely: "Likely" },
     kind: {
-      strength: "Their strength",
-      weakness: "Their weakness",
+      strength: "Strength",
+      weakness: "Weakness",
       unmet_demand: "Unmet demand",
       switching_reason: "Why patients switch",
       admin_friction: "Front-desk friction",
@@ -60,6 +62,20 @@ export const copy = {
     runningText: "Reading reviews, looking for patterns with evidence, and writing your plan. This takes several minutes.",
     failedTitle: "This step could not finish",
     openRun: "See progress",
+  },
+  disciplines: {
+    title: "By discipline",
+    intro: "Each discipline judged on its own: who leads it locally, what patients come for, what holds you back, and what to do about it.",
+    leader: "Local leader",
+    noLeader: "No single rival leads this discipline in the reviews we read.",
+    demand: "What patients come for",
+    noDemand: "Not enough reviews to say yet.",
+    rivalsRead: "rivals read",
+    holdingBack: "What is holding you back here",
+    noStatements: "Nothing specific stands out in this discipline yet.",
+    actions: "Actions for this discipline",
+    noActions: "No discipline-specific action beyond the clinic-wide plan.",
+    none: "This report has no discipline sections yet. The next analysis will include them.",
   },
   actions: {
     title: "Action plan",
