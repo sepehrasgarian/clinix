@@ -47,7 +47,7 @@ export function FindingDetail({
         <div className="grid gap-3">
           {finding.evidence.map((e) => {
             const review = byId.get(e.reviewId);
-            return review ? <EvidenceCard key={e.reviewId} review={review} quote={e.quote} sourceName={competitorName(review.placeId === report.clinicId ? null : review.placeId)} /> : null;
+            return review ? <EvidenceCard key={e.reviewId} review={review} quote={e.quote} sourceName={competitorName(report.competitors.some((c) => c.placeId === review.placeId) ? review.placeId : null)} /> : null;
           })}
         </div>
       </section>

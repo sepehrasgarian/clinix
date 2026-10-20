@@ -13,7 +13,7 @@ export default async function FindingsPage({ params }: { params: Promise<{ id: s
   return (
     <>
       <PageHeader title={copy.findings.title} intro={copy.findings.intro} />
-      {latest ? <FindingsExplorer report={latest.report} reviews={latest.report.reviews} clinicName={clinic.name} /> : <EmptyReport clinicId={id} inProgress={await getInProgress(id)} />}
+      {latest ? <FindingsExplorer report={latest.report} reviews={latest.report.reviews} clinicName={clinic.name} disciplines={clinic.disciplines} /> : <EmptyReport clinicId={id} inProgress={await getInProgress(id)} />}
     </>
   );
 }

@@ -52,3 +52,11 @@ body {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: none; }
 }
+
+/* Download PDF prints the report alone: no sidebar, no sticky menu, cards unbroken across pages. */
+@media print {
+  aside, nav[aria-label="Report sections"], nav[aria-label="Main"], .print\:hidden { display: none !important; }
+  main { padding: 0 !important; }
+  body { background: white; }
+  section { break-inside: avoid; }
+}
