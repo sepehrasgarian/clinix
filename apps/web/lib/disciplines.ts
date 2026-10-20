@@ -1,7 +1,7 @@
 import { Activity, Baby, Bone, Brain, Dumbbell, Ear, Eye, Flower2, Footprints, Hand, HeartPulse, Leaf, Scissors, Sparkles, Stethoscope, Syringe, type LucideIcon } from "lucide-react";
 import { COMMON_DISCIPLINES, DISCIPLINES, type Discipline } from "@clinix/contracts";
 
-export { COMMON_DISCIPLINES, DISCIPLINES, disciplinesFromTypes } from "@clinix/contracts";
+export { COMMON_DISCIPLINES, DISCIPLINES, disciplinesFromListing, disciplinesFromTypes } from "@clinix/contracts";
 
 const ICONS: Partial<Record<Discipline, LucideIcon>> = {
   dentistry: Stethoscope,

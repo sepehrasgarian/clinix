@@ -7,7 +7,7 @@ import { type Clinic, type Discipline, type ClinicInput, type Place } from "@cli
 import { Card } from "@/components/ui/Card";
 import { copy } from "@/lib/copy";
 import { getMarketCard, searchClinics, type MarketCard } from "@/lib/api";
-import { disciplinesFromTypes } from "@/lib/disciplines";
+import { disciplinesFromListing } from "@/lib/disciplines";
 import { DisciplinePicker } from "./DisciplinePicker";
 import { ListingCard } from "./ListingCard";
 import { Field, PrimaryButton, SetupFrame, inputClass } from "./SetupFrame";
@@ -84,8 +84,8 @@ export function ClinicForm({
     setWebsite(r.website ?? "");
     setPhone(r.phone ?? "");
     setAddress(r.address);
-    // The listing's Google types usually say what kind of clinic it is: preselect, let the owner correct.
-    const implied = disciplinesFromTypes(r.types);
+    // The listing's name and specific Google types usually say what kind of clinic it is: preselect, let the owner correct.
+    const implied = disciplinesFromListing(r.name, r.types);
     if (implied.length && disciplines.length === 0) {
       setDisciplines(implied.slice(0, 4));
       setAutoFilled(true);

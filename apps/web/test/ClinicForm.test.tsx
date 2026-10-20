@@ -39,11 +39,8 @@ describe("ClinicForm", () => {
     render(<ClinicForm onSubmit={onSubmit} search={vi.fn(async () => [pharmacy])} marketCard={marketCard} />);
     fireEvent.change(screen.getByLabelText(/find your clinic/i), { target: { value: "Finch" } });
     fireEvent.click(await screen.findByRole("button", { name: /Finch East Family Dental/ }));
-    // a pharmacy listing preselects nothing: pick Dentistry from the panel
-    fireEvent.click(screen.getByRole("button", { name: /choose disciplines/i }));
-    const panel = screen.getByRole("region", { name: /choose disciplines/i });
-    fireEvent.click(within(panel).getByRole("button", { name: /Dentistry/ }));
-    fireEvent.click(within(panel).getByRole("button", { name: /^Done$/ }));
+    // the listing name says "Dental", so Dentistry is preselected even though Google typed it as a pharmacy
+    expect(screen.getByText(/set from your google listing/i)).toBeInTheDocument();
     const start = screen.getByRole("button", { name: /start the quick scan/i });
     expect(start).toBeDisabled();
     fireEvent.click(screen.getByRole("checkbox", { name: /yes, this is my clinic/i }));
