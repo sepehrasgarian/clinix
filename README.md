@@ -1,8 +1,8 @@
-# Clinix
+# ClinX
 
 **Competitor analysis for clinics, turned into a ranked action plan.**
 
-Tell Clinix where your clinic is and what you offer. It finds the competing clinics around you, reads what their patients say, compares you on the things patients notice, and gives you a ranked plan where every item is backed by real reviews.
+Tell ClinX where your clinic is and what you offer. It finds the competing clinics around you, reads what their patients say, compares you on the things patients notice, and gives you a ranked plan where every item is backed by real reviews.
 
 ## Stack
 
@@ -11,7 +11,9 @@ Tell Clinix where your clinic is and what you offer. It finds the competing clin
 | Web app | Next.js (App Router, TypeScript, Tailwind) |
 | Auth | Clerk |
 | Agent memory | SurrealDB (embedded engine, zero setup) |
-| AI | Claude (Anthropic API) with web search for competitor discovery |
+| Analysis | Claude (Anthropic API): reads clinic websites, ranks competitors, mines reviews through discipline packs, writes the plan |
+| Market data | Google Places API (New): listings, ratings, hours, sample reviews |
+| Review text | Apify Google Maps reviews actor; reviewer names and photos are dropped at ingest and never stored |
 | API | Node + Hono |
 
 ## Repo layout
@@ -85,6 +87,10 @@ npm test                    # all packages
 npm run dev:api             # API only, http://localhost:8787
 npm run dev:web             # web only, http://localhost:3000
 ```
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the code structure, testing rules and commit conventions.
 
 ## Team
 

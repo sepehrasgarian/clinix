@@ -24,3 +24,11 @@ CLAUDE.local.md
 .logs/
 CLAUDE.md
 AGENTS.md
+
+# private prompt guides: never in the repository
+prompts_text/
+prompts-private/
+
+# screenshots and scratch images at the repo root
+/*.png
+/*.jpg
