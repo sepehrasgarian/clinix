@@ -26,6 +26,8 @@ export function OnboardingFlow() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [guest, setGuest] = useState(true);
+  /** Set when the owner presses Back: shows an earlier step than the analysis state implies. */
+  const [backTo, setBackTo] = useState<"form" | "found" | null>(null);
 
   // Browser-only state (saved progress, guest or user) is read after mount, on the next tick.
   useEffect(() => {
@@ -87,15 +89,16 @@ export function OnboardingFlow() {
   const onSubmitClinic = (input: ClinicInput) =>
     run(async () => {
       const clinic = await createClinic(input);
-      const a = await startAnalysis(clinic.id);
+      const a = await startAnalysis(clinic.id); // a recent scan of the same listing is reused, so this is quick
       persist({ clinic, analysisId: a.id });
       setAnalysis(a);
+      setBackTo(null);
     });
 
-  if (!saved || !analysis) {
+  if (!saved || !analysis || backTo === "form") {
     return (
       <>
-        <ClinicForm onSubmit={onSubmitClinic} busy={busy} />
+        <ClinicForm onSubmit={onSubmitClinic} busy={busy} initial={saved && analysis && backTo === "form" ? { clinic: saved.clinic, place: analysis.scan?.place ?? null } : undefined} />
         {error && <p role="alert" className="fixed bottom-20 left-1/2 -translate-x-1/2 rounded-lg bg-alert-soft px-4 py-2 text-sm text-alert">{error}</p>}
       </>
     );
@@ -106,7 +109,7 @@ export function OnboardingFlow() {
   if (analysis.stage === "quick_scan" && (analysis.status === "queued" || analysis.status === "running" || analysis.status === "failed")) {
     return <ScanningStage analysis={analysis} disciplines={clinic.disciplines} retrying={busy} onRetry={() => run(async () => setAnalysis(await retryAnalysis(clinic.id, analysis.id)))} />;
   }
-  if (analysis.status === "awaiting_services" && analysis.scan) {
+  if ((analysis.status === "awaiting_services" || (backTo === "found" && analysis.status === "awaiting_competitors")) && analysis.scan) {
     // Until Clerk lands on Day 4, "create an account" signs in as the dev user and claims the guest clinic.
     const createAccount = () =>
       run(async () => {
@@ -123,7 +126,13 @@ export function OnboardingFlow() {
         busy={busy}
         guest={guest}
         onCreateAccount={createAccount}
-        onContinue={(services) => run(async () => setAnalysis(await confirmServices(clinic.id, analysis.id, services)))}
+        onBack={() => setBackTo("form")}
+        onContinue={(services) =>
+          run(async () => {
+            setAnalysis(await confirmServices(clinic.id, analysis.id, services));
+            setBackTo(null);
+          })
+        }
       />
     );
   }
@@ -136,6 +145,7 @@ export function OnboardingFlow() {
         analysis={analysis}
         disciplines={clinic.disciplines}
         busy={busy}
+        onBack={() => setBackTo("found")}
         onAdd={async (q) => setAnalysis({ ...analysis, discovery: await addCompetitor(clinic.id, analysis.id, q) })}
         onConfirm={(placeIds) =>
           run(async () => {

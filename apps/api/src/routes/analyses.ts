@@ -48,9 +48,11 @@ export function analysesRoutes(deps: PipelineDeps, run: StageRunners = stageRunn
       if (!analysis || analysis.clinicId !== clinic.id) return c.json({ error: "not found" }, 404);
       const body = ServicesBody.safeParse(await c.req.json().catch(() => null));
       if (!body.success) return c.json({ error: "services required" }, 400);
-      if (analysis.status !== "awaiting_services") return c.json({ error: `analysis is ${analysis.status}, not awaiting_services` }, 409);
+      const canConfirm = analysis.status === "awaiting_services" || analysis.status === "awaiting_competitors";
+      if (!canConfirm) return c.json({ error: `analysis is ${analysis.status}, not awaiting_services` }, 409);
       await updateClinic(clinic.id, { services: body.data.services });
-      const moved = await transition(analysis.id, "awaiting_services", { status: "queued", stage: "discovery" });
+      // Confirming again from the competitors step re-runs discovery with the new services.
+      const moved = await transition(analysis.id, ["awaiting_services", "awaiting_competitors"], { status: "queued", stage: "discovery" });
       if (!moved) return c.json({ error: "analysis changed, reload" }, 409);
       void run.discovery(analysis.id, deps);
       return c.json(moved, 202);

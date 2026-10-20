@@ -134,4 +134,12 @@ describe("API routes", () => {
     const res = await app.request(`/api/clinics/${clinic.id}/analyses/${a.id}`, { headers: { "x-user-id": "user_2" } });
     expect(res.status).toBe(404);
   });
+
+  it("lets the owner go back from competitors and confirm services again, which re-runs discovery", async () => {
+    const { clinic, a } = await awaitingCompetitors();
+    const res = await app.request(`/api/clinics/${clinic.id}/analyses/${a.id}/services`, { method: "POST", headers: auth, body: JSON.stringify({ services: ["cleaning", "implants"] }) });
+    expect(res.status).toBe(202);
+    expect(await getAnalysis(a.id)).toMatchObject({ stage: "discovery", status: "queued" });
+    expect(run.discovery).toHaveBeenCalledWith(a.id, deps);
+  });
 });

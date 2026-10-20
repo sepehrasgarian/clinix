@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import clsx from "clsx";
 import { Globe, MapPin, Phone, Search, X } from "lucide-react";
-import { type Discipline, type ClinicInput, type Place } from "@clinix/contracts";
+import { type Clinic, type Discipline, type ClinicInput, type Place } from "@clinix/contracts";
 import { Card } from "@/components/ui/Card";
 import { copy } from "@/lib/copy";
 import { getMarketCard, searchClinics, type MarketCard } from "@/lib/api";
@@ -24,27 +24,30 @@ const NON_CLINIC_TYPES = new Set(["hospital", "pharmacy", "drugstore", "supermar
 export function ClinicForm({
   onSubmit,
   busy,
+  initial,
   search = searchClinics,
   marketCard = getMarketCard,
 }: {
   onSubmit: (input: ClinicInput) => void;
   busy?: boolean;
+  /** When the owner comes back to this step: the clinic and listing they already chose. */
+  initial?: { clinic: Clinic; place: Place | null };
   search?: typeof searchClinics;
   marketCard?: typeof getMarketCard;
 }) {
   const [query, setQuery] = useState("");
-  const [city, setCity] = useState("");
+  const [city, setCity] = useState(initial?.clinic.city ?? "");
   const [results, setResults] = useState<Place[]>([]);
   const [searching, setSearching] = useState(false);
-  const [place, setPlace] = useState<Place | null>(null);
-  const [website, setWebsite] = useState("");
-  const [phone, setPhone] = useState("");
-  const [address, setAddress] = useState("");
+  const [place, setPlace] = useState<Place | null>(initial?.place ?? null);
+  const [website, setWebsite] = useState(initial?.clinic.website ?? "");
+  const [phone, setPhone] = useState(initial?.clinic.phone ?? "");
+  const [address, setAddress] = useState(initial?.place?.address ?? (initial ? `${initial.clinic.address}, ${initial.clinic.city}` : ""));
   const [opened, setOpened] = useState<(typeof openedOptions)[number]["key"] | null>(null);
-  const [disciplines, setDisciplines] = useState<Discipline[]>([]);
+  const [disciplines, setDisciplines] = useState<Discipline[]>(initial?.clinic.disciplines ?? []);
   const [autoFilled, setAutoFilled] = useState(false);
   const [serviceQuery, setServiceQuery] = useState("");
-  const [services, setServices] = useState<string[]>([]);
+  const [services, setServices] = useState<string[]>(initial?.clinic.services ?? []);
   const [market, setMarket] = useState<MarketCard | null>(null);
   const [businessConfirmed, setBusinessConfirmed] = useState(false);
   const looksNonClinic = !!place && place.types.some((t) => NON_CLINIC_TYPES.has(t));
@@ -167,7 +170,7 @@ export function ClinicForm({
       title={copy.onboarding.title}
       intro={copy.onboarding.intro}
       status={ready ? copy.onboarding.statusReady : copy.onboarding.statusMissing}
-      action={<PrimaryButton onClick={submit} disabled={!ready || busy}>{busy ? copy.onboarding.starting : copy.onboarding.start}</PrimaryButton>}
+      action={<PrimaryButton onClick={submit} disabled={!ready || busy}>{busy ? copy.onboarding.starting : initial ? "Save and continue" : copy.onboarding.start}</PrimaryButton>}
       aside={preview}
     >
       <form className="flex flex-col gap-6 rounded-[20px] border border-line bg-card p-5 shadow-[var(--shadow-card)] md:p-7" onSubmit={(e) => { e.preventDefault(); submit(); }}>

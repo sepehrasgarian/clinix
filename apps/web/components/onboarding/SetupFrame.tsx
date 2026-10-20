@@ -23,7 +23,8 @@ export function SetupFrame({
   children,
 }: {
   step: number; // 1-based
-  back?: { href: string; label: string };
+  /** Where Back goes: a step change in the flow (`onClick`) or a page (`href`). */
+  back?: { label: string; href?: string; onClick?: () => void };
   title: string;
   intro?: string;
   status?: string;
@@ -70,11 +71,16 @@ export function SetupFrame({
 
       <div className="flex min-h-screen flex-col">
         <main className="flex-1 px-4 py-6 md:px-10 md:py-8">
-          {back && (
-            <Link href={back.href} className="mb-3 inline-flex min-h-9 items-center gap-1 text-sm text-muted hover:text-ink">
-              <ArrowLeft size={16} aria-hidden /> {copy.common.back} to {back.label}
-            </Link>
-          )}
+          {back &&
+            (back.onClick ? (
+              <button type="button" onClick={back.onClick} className="mb-3 inline-flex min-h-9 items-center gap-1 text-sm text-muted hover:text-ink">
+                <ArrowLeft size={16} aria-hidden /> {copy.common.back} to {back.label}
+              </button>
+            ) : (
+              <Link href={back.href ?? "/"} className="mb-3 inline-flex min-h-9 items-center gap-1 text-sm text-muted hover:text-ink">
+                <ArrowLeft size={16} aria-hidden /> {copy.common.back} to {back.label}
+              </Link>
+            ))}
           <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{title}</h1>
           {intro && <p className="mt-1 max-w-2xl text-muted">{intro}</p>}
           <div className={clsx("mt-6 grid gap-6", aside && "xl:grid-cols-[minmax(0,1fr)_360px]")}>

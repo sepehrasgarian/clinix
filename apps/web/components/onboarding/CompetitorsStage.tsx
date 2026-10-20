@@ -19,7 +19,7 @@ export function countPerDiscipline(candidates: CompetitorCandidate[], selected: 
 }
 
 /** Step 3 of 4: the owner confirms up to five competitors per discipline (checkpoint 2). */
-export function CompetitorsStage({ analysis, disciplines, onConfirm, onAdd, busy }: { analysis: Analysis; disciplines: Discipline[]; onConfirm: (placeIds: string[]) => void; onAdd?: (query: string) => Promise<void>; busy?: boolean }) {
+export function CompetitorsStage({ analysis, disciplines, onConfirm, onAdd, onBack, busy }: { analysis: Analysis; disciplines: Discipline[]; onConfirm: (placeIds: string[]) => void; onAdd?: (query: string) => Promise<void>; onBack?: () => void; busy?: boolean }) {
   const discovery = analysis.discovery!;
   const [selected, setSelected] = useState<string[]>(discovery.selectedPlaceIds);
   const [missed, setMissed] = useState("");
@@ -41,7 +41,7 @@ export function CompetitorsStage({ analysis, disciplines, onConfirm, onAdd, busy
   return (
     <SetupFrame
       step={3}
-      back={{ href: "/onboarding", label: copy.onboarding.steps[1] }}
+      back={{ label: copy.onboarding.steps[1], onClick: onBack, href: "/start" }}
       title={copy.onboarding.competitors.title}
       intro={copy.onboarding.competitors.intro}
       status={`${selected.length} ${copy.onboarding.competitors.selected}`}

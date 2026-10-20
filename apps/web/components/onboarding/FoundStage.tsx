@@ -20,6 +20,7 @@ export function FoundStage({
   busy,
   guest = false,
   onCreateAccount,
+  onBack,
 }: {
   analysis: Analysis;
   disciplines?: Discipline[];
@@ -27,6 +28,7 @@ export function FoundStage({
   busy?: boolean;
   guest?: boolean;
   onCreateAccount?: () => void;
+  onBack?: () => void;
 }) {
   const scan = analysis.scan!;
   const [services, setServices] = useState(scan.understanding.services.slice(0, 12));
@@ -61,7 +63,7 @@ export function FoundStage({
   return (
     <SetupFrame
       step={2}
-      back={{ href: "/start", label: copy.onboarding.steps[0] }}
+      back={{ label: copy.onboarding.steps[0], onClick: onBack, href: "/start" }}
       title={copy.onboarding.found.title}
       intro={copy.onboarding.found.intro}
       status={guest ? copy.onboarding.found.accountGate : `${services.length} services selected`}
