@@ -3,6 +3,7 @@ import { createApp } from "../../src/app.js";
 import { resetDbForTests } from "../../src/db/connection.js";
 import { getAnalysis, saveDiscovery, saveScan, transition } from "../../src/db/analyses.js";
 import type { PipelineDeps } from "../../src/pipeline/deps.js";
+import { testGuides } from "../helpers.js";
 import { fixtureAnalysis } from "@clinix/contracts/fixtures";
 
 const deps = { places: {}, ai: {} } as unknown as PipelineDeps;

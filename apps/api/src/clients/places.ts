@@ -88,7 +88,7 @@ export class PlacesClient {
   async photo(photoName: string, maxWidthPx = 480): Promise<{ bytes: ArrayBuffer; contentType: string } | null> {
     const url = `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=${maxWidthPx}&key=${this.apiKey}`;
     const res = await this.fetchImpl(url);
-    if (res.status === 404) return null;
+    if (res.status === 400 || res.status === 403 || res.status === 404) return null; // unknown or expired photo name
     if (!res.ok) throw new Error(`Place photo failed with ${res.status}`);
     return { bytes: await res.arrayBuffer(), contentType: res.headers.get("content-type") ?? "image/jpeg" };
   }

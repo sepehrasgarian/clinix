@@ -19,7 +19,7 @@ export function validate(clinic: Clinic): void {
 
 /** Phase 2: find the clinic's own Google listing. */
 export async function enrich(clinic: Clinic, deps: PipelineDeps): Promise<Place> {
-  const geo = await deps.places.geocode(`${clinic.address}, ${clinic.city}, ${clinic.province}`);
+  const geo = await deps.places.geocode([clinic.address, clinic.city, clinic.province, clinic.country].filter(Boolean).join(", "));
   if (!geo) throw new Error("Geocoding returned no result for this address.");
 
   const matches = await deps.places.searchText(`${clinic.name}, ${clinic.address}, ${clinic.city}`, { near: geo.location, radiusM: 50_000, max: 5 });

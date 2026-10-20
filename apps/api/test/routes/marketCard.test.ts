@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { Place } from "@clinix/contracts";
 import { createApp } from "../../src/app.js";
 import type { PipelineDeps } from "../../src/pipeline/deps.js";
+import { testGuides } from "../helpers.js";
 
 const own: Place = { placeId: "p_own", name: "Mine", address: "5650 Yonge St", lat: 43.78, lng: -79.415, rating: 4.9, reviewCount: 74, types: ["dentist"], sampleReviews: [] };
 const peer = (id: string, dLat: number, reviewCount: number, rating = 4.6, types = ["dentist"]): Place => ({ placeId: id, name: id, address: "", lat: own.lat + dLat, lng: own.lng, rating, reviewCount, types, sampleReviews: [] });
@@ -11,6 +12,7 @@ const deps = {
     details: vi.fn(async (id: string) => (id === "p_own" ? own : null)),
     searchText: vi.fn(async () => [own, peer("a", 0.01, 1026, 4.8), peer("b", 0.02, 300), peer("diag", 0.01, 2378, 4.9, ["diagnostic_center"]), peer("far", 0.5, 999)]),
   },
+  guides: testGuides(),
   ai: {},
 } as unknown as PipelineDeps;
 const app = createApp({ deps, run: { quickScan: vi.fn(), discovery: vi.fn(), deep: vi.fn() } });

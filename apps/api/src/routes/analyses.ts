@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import type { CompetitorCandidate } from "@clinix/contracts";
 import { getClinic, updateClinic } from "../db/clinics.js";
-import { createAnalysis, createAnalysisFromScan, getAnalysis, listAnalyses, reusableScan, saveDiscovery, transition } from "../db/analyses.js";
+import { createAnalysis, createAnalysisFromScan, getAnalysis, listAnalyses, reusableScan, saveDiscovery, setRecommendationStatus, transition } from "../db/analyses.js";
 import type { AuthVariables } from "../middleware/auth.js";
 import type { PipelineDeps } from "../pipeline/deps.js";
 import { validateSelection } from "../pipeline/discover.js";
@@ -12,6 +12,7 @@ import { distanceKm, ringFor } from "../lib/geo.js";
 const ServicesBody = z.object({ services: z.array(z.string().min(1)).min(1).max(12) });
 const SelectionBody = z.object({ placeIds: z.array(z.string().min(1)).max(40) });
 const AddCompetitorBody = z.object({ query: z.string().min(2).max(120) });
+const StatusBody = z.object({ status: z.enum(["todo", "in_progress", "done"]) });
 
 /** Routes under /clinics/:id/analyses. `deps` and `run` are injected so tests can use fakes. */
 export function analysesRoutes(deps: PipelineDeps, run: StageRunners = stageRunners) {
@@ -91,15 +92,30 @@ export function analysesRoutes(deps: PipelineDeps, run: StageRunners = stageRunn
       await saveDiscovery(analysis.id, discovery);
       return c.json(discovery, 201);
     })
+    // Retry whichever stage failed; the stage's inputs (scan, selection) are kept.
     .post("/:aid/retry", async (c) => {
       const clinic = await getClinic(c.req.param("id")!, c.get("userId"));
       if (!clinic) return c.json({ error: "not found" }, 404);
       const analysis = await getAnalysis(c.req.param("aid"));
       if (!analysis || analysis.clinicId !== clinic.id) return c.json({ error: "not found" }, 404);
-      if (analysis.status !== "failed" || analysis.stage !== "quick_scan") return c.json({ error: "only a failed quick scan can be retried here" }, 409);
-      const moved = await transition(analysis.id, "failed", { status: "queued", stage: "quick_scan", error: "" });
+      if (analysis.status !== "failed") return c.json({ error: "only a failed analysis can be retried" }, 409);
+      const moved = await transition(analysis.id, "failed", { status: "queued", stage: analysis.stage, error: "" });
       if (!moved) return c.json({ error: "analysis changed, reload" }, 409);
-      void run.quickScan(analysis.id, deps);
+      const runner = { quick_scan: run.quickScan, discovery: run.discovery, deep: run.deep }[analysis.stage];
+      void runner(analysis.id, deps);
       return c.json(moved, 202);
+    })
+    // The owner (or front desk) tracks an action: to do -> in progress -> done.
+    .patch("/:aid/recommendations/:rid", async (c) => {
+      const clinic = await getClinic(c.req.param("id")!, c.get("userId"));
+      if (!clinic) return c.json({ error: "not found" }, 404);
+      const analysis = await getAnalysis(c.req.param("aid"));
+      if (!analysis || analysis.clinicId !== clinic.id) return c.json({ error: "not found" }, 404);
+      const body = StatusBody.safeParse(await c.req.json().catch(() => null));
+      if (!body.success) return c.json({ error: "status must be todo, in_progress or done" }, 400);
+      if (!analysis.report) return c.json({ error: "this analysis has no report yet" }, 409);
+      const report = await setRecommendationStatus(analysis.id, c.req.param("rid"), body.data.status);
+      if (!report) return c.json({ error: "not found" }, 404);
+      return c.json(report.recommendations.find((r) => r.id === c.req.param("rid")));
     });
 }

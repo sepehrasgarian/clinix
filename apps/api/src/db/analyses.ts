@@ -132,3 +132,13 @@ export async function saveReport(id: string, report: Report): Promise<void> {
   const db = await getDb();
   await db.update(rid("analysis", id)).merge({ report, updatedAt: nowIso() });
 }
+
+/** Updates one recommendation's status inside a stored report. Returns null when the analysis or recommendation is unknown. */
+export async function setRecommendationStatus(id: string, recommendationId: string, status: Report["recommendations"][number]["status"]): Promise<Report | null> {
+  const current = await getAnalysis(id);
+  if (!current?.report) return null;
+  if (!current.report.recommendations.some((r) => r.id === recommendationId)) return null;
+  const report: Report = { ...current.report, recommendations: current.report.recommendations.map((r) => (r.id === recommendationId ? { ...r, status } : r)) };
+  await saveReport(id, report);
+  return report;
+}

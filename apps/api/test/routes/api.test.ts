@@ -3,6 +3,7 @@ import { createApp } from "../../src/app.js";
 import { resetDbForTests } from "../../src/db/connection.js";
 import { getAnalysis, saveDiscovery, saveScan, transition } from "../../src/db/analyses.js";
 import type { PipelineDeps } from "../../src/pipeline/deps.js";
+import { testGuides } from "../helpers.js";
 import { fixtureAnalysis } from "@clinix/contracts/fixtures";
 import type { Place } from "@clinix/contracts";
 
@@ -25,10 +26,8 @@ describe("API routes", () => {
     run.discovery.mockClear();
   });
 
-  it("health and mock endpoints need no auth", async () => {
+  it("health needs no auth", async () => {
     expect((await app.request("/health")).status).toBe(200);
-    const report = await (await app.request("/api/mock/clinics/x/report")).json();
-    expect(report).toMatchObject({ analysisId: fixtureAnalysis.id });
   });
 
   it("rejects unauthenticated requests", async () => {

@@ -7,7 +7,7 @@ import { distanceKm } from "../lib/geo.js";
 import type { AuthVariables } from "../middleware/auth.js";
 import type { PipelineDeps } from "../pipeline/deps.js";
 
-const Query = z.object({ q: z.string().trim().min(2).max(120), city: z.string().trim().min(1).max(60).default("Toronto") });
+const Query = z.object({ q: z.string().trim().min(2).max(120), city: z.string().trim().max(80).default("") });
 const MarketQuery = z.object({
   placeId: z.string().min(1),
   disciplines: z.string().transform((v) => v.split(",").filter(Boolean)).pipe(z.array(Discipline).min(1).max(4)),
@@ -56,7 +56,7 @@ export function lookupRoutes(deps: PipelineDeps) {
       const parsed = Query.safeParse({ q: c.req.query("q"), city: c.req.query("city") ?? undefined });
       if (!parsed.success) return c.json({ error: "q (2-120 chars) is required" }, 400);
       const { q, city } = parsed.data;
-      const places = await deps.places.searchText(`${q} ${city}`, { max: 6 });
+      const places = await deps.places.searchText(city ? `${q}, ${city}` : q, { max: 6 });
       const clinics: Place[] = places.filter((p) => classifyBusiness(p.types) !== "non_clinic");
       return c.json(clinics);
     })
@@ -67,11 +67,15 @@ export function lookupRoutes(deps: PipelineDeps) {
       if (!card) return c.json({ error: "listing not found" }, 404);
       return c.json(card);
     })
-    .get("/photo/*", async (c) => {
-      const name = c.req.path.replace(/^.*\/photo\//, "");
-      if (!/^places\/[\w-]+\/photos\/[\w-]+$/.test(name)) return c.json({ error: "invalid photo name" }, 400);
-      const photo = await deps.places.photo(name);
-      if (!photo) return c.json({ error: "not found" }, 404);
-      return new Response(photo.bytes, { headers: { "Content-Type": photo.contentType, "Cache-Control": "public, max-age=86400" } });
-    });
+}
+
+/** Public: a browser <img> cannot send identity headers. Listing photos are public data; the name is validated and the key stays server-side. */
+export function photoRoutes(deps: PipelineDeps) {
+  return new Hono().get("/*", async (c) => {
+    const name = c.req.path.replace(/^.*\/photo\//, "");
+    if (!/^places\/[\w-]+\/photos\/[\w-]+$/.test(name)) return c.json({ error: "invalid photo name" }, 400);
+    const photo = await deps.places.photo(name);
+    if (!photo) return c.json({ error: "not found" }, 404);
+    return new Response(photo.bytes, { headers: { "Content-Type": photo.contentType, "Cache-Control": "public, max-age=86400" } });
+  });
 }

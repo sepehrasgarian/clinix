@@ -7,8 +7,7 @@ import type { StageRunners } from "./pipeline/runner.js";
 import { analysesRoutes } from "./routes/analyses.js";
 import { clinics } from "./routes/clinics.js";
 import { health } from "./routes/health.js";
-import { lookupRoutes } from "./routes/lookup.js";
-import { mock } from "./routes/mock.js";
+import { lookupRoutes, photoRoutes } from "./routes/lookup.js";
 
 export type AppOptions = {
   deps: PipelineDeps;
@@ -21,7 +20,7 @@ export function createApp({ deps, clerkSecretKey, run }: AppOptions) {
   const app = new Hono<{ Variables: AuthVariables }>();
   app.use("*", cors());
   app.route("/health", health);
-  app.route("/api/mock", mock);
+  app.route("/api/photo", photoRoutes(deps));
 
   const api = new Hono<{ Variables: AuthVariables }>();
   api.use("*", requireUser(clerkSecretKey));
