@@ -39,7 +39,7 @@ export function SetupFrame({
     <div className="min-h-screen bg-surface md:grid md:grid-cols-[260px_1fr]">
       <aside className="border-b border-line bg-card md:sticky md:top-0 md:h-screen md:border-r md:border-b-0">
         <div className="flex items-center justify-between gap-3 px-5 py-4 md:flex-col md:items-stretch md:gap-6 md:py-6">
-          <Logo surface="light" height={22} />
+          <Logo surface="light" variant="classic" height={22} />
           <div className="flex items-center gap-3 rounded-xl border border-line bg-surface px-3 py-2.5">
             <svg viewBox="0 0 36 36" className="size-9 shrink-0" aria-hidden>
               <circle cx="18" cy="18" r="15" fill="none" stroke="var(--color-line)" strokeWidth="4" />

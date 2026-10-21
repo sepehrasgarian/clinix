@@ -12,7 +12,7 @@ function Delta({ value, suffix = "" }: { value: number; suffix?: string }) {
   return <span className={`font-mono text-3xl tabular-nums ${tone}`}>{sign}{value}{suffix}</span>;
 }
 
-export const metadata: Metadata = { title: "Since last time – ClinX" };
+export const metadata: Metadata = { title: "Since last time" };
 
 export default async function ComparePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

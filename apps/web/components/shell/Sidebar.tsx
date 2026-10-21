@@ -28,7 +28,7 @@ export function Sidebar({ clinic, clinics = [clinic], onOpenChat }: { clinic: Cl
   };
   return (
     <aside className="flex w-full flex-col gap-6 border-b border-line bg-card p-4 md:min-h-screen md:w-60 md:border-r md:border-b-0">
-      <Logo surface="light" height={22} href={base} className="px-1" />
+      <Logo surface="light" variant="classic" height={22} href={base} className="px-1" />
       <div className="rounded-xl border border-line bg-surface px-3 py-2">
         <label htmlFor="clinic-switcher" className="text-xs text-faint">Clinic</label>
         {clinics.length > 1 ? (

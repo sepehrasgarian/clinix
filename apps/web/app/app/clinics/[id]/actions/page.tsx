@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { copy } from "@/lib/copy";
 import { getClinic, getInProgress, getLatestReport } from "@/lib/api";
 
-export const metadata: Metadata = { title: "Action plan – ClinX" };
+export const metadata: Metadata = { title: "Action plan" };
 
 export default async function ActionsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

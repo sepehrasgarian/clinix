@@ -34,12 +34,16 @@ export function getUserId(): string | null {
 /** Dev-only stand-in for sign-in until Clerk lands. */
 export const DEV_USER_ID = process.env.NEXT_PUBLIC_DEV_USER_ID ?? "dev";
 
+/** Fired when the signed-in state changes in this tab, so the nav can follow without a reload. */
+export const AUTH_EVENT = "clinx:auth-change";
+
 export function setDevUser(id: string) {
   try {
     localStorage.setItem(USER_KEY, id);
   } catch {
     /* ignore */
   }
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(AUTH_EVENT));
 }
 
 export const isGuest = (): boolean => getUserId() === null;

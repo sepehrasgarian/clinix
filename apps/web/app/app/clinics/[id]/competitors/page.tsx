@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { copy } from "@/lib/copy";
 import { getClinic, getInProgress, getLatestReport } from "@/lib/api";
 
-export const metadata: Metadata = { title: "Competitors – ClinX" };
+export const metadata: Metadata = { title: "Competitors" };
 
 export default async function CompetitorsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

@@ -5,7 +5,7 @@ import { EmptyState, PageHeader } from "@/components/ui/PageHeader";
 import { copy } from "@/lib/copy";
 import { getClinic, getInProgress, getLatestReport } from "@/lib/api";
 
-export const metadata: Metadata = { title: "Disciplines – ClinX" };
+export const metadata: Metadata = { title: "Disciplines" };
 
 export default async function DisciplinesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

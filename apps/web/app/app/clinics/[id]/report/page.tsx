@@ -4,7 +4,7 @@ import { ReportPage } from "@/components/report/ReportPage";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { getClinic, getInProgress, getLatestReport } from "@/lib/api";
 
-export const metadata: Metadata = { title: "Report – ClinX" };
+export const metadata: Metadata = { title: "Report" };
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
