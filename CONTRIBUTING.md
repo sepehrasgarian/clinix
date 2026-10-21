@@ -18,7 +18,8 @@ Secrets live in the repo-root `.env` (gitignored). Keep `.env.example` in sync w
 
 ## Rules that matter to the product
 
-- Owner-facing copy never says "AI" and never names a supplier. English and French only.
+- Owner-facing copy never says "AI" and never names a supplier.
+- Languages: English (`en`), French (`fr`, Canadian), Spanish (`es`), Russian (`ru`) and Chinese (`zh`). Write the English string in `lib/copy.ts`; translations live in `lib/i18n/dictionaries/*.json`, keyed by that English text. A missing translation falls back to English, so a string you add is English until it is translated. Right-to-left languages are not supported.
 - A finding needs two distinct reviews with verbatim quotes; the validator in `apps/api/src/lib/citations.ts` enforces it. Findings that fail are set aside and counted, never deleted.
 - Reviewer names and photos are never stored. Never commit `apps/api/data/` or any real clinic data.
 - Never recommend price changes in generated text.
