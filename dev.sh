@@ -19,6 +19,9 @@ if [ ! -f .env ]; then
   bold "Created .env from .env.example. Add your keys there (ANTHROPIC_API_KEY, GOOGLE_PLACES_API_KEY, APIFY_TOKEN)."
 fi
 
+# Next.js reads the shared root .env through a symlink, so its proxy and client bundles see the public keys.
+[ -e apps/web/.env.local ] || ln -s ../../.env apps/web/.env.local
+
 # Every clone gets the commit guard (private files and secrets never reach the repository).
 git config core.hooksPath scripts/githooks 2>/dev/null || true
 

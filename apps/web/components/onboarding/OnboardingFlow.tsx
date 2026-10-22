@@ -4,7 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Analysis, Clinic, ClinicInput } from "@clinix/contracts";
 import { addCompetitor, claimClinic, confirmCompetitors, confirmServices, createClinic, getAnalysis, retryAnalysis, startAnalysis } from "@/lib/api";
+import { clerkEnabled, signUpUrl } from "@/lib/auth";
 import { DEV_USER_ID, getGuestId, isGuest, setDevUser } from "@/lib/identity";
+import { useSignedIn } from "@/components/auth/useSignedIn";
 import { ClinicForm } from "./ClinicForm";
 import { CompetitorsStage } from "./CompetitorsStage";
 import { FoundStage } from "./FoundStage";
@@ -13,7 +15,7 @@ import { ScanningStage } from "./ScanningStage";
 const STORAGE_KEY = "clinix.onboarding";
 const POLL_MS = 2500;
 
-type Saved = { clinic: Clinic; analysisId: string };
+type Saved = { clinic: Clinic; analysisId: string; claimed?: boolean };
 
 /**
  * Drives setup from step 1 to the start of the deep analysis. The analysis status decides
@@ -26,13 +28,14 @@ export function OnboardingFlow() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [guest, setGuest] = useState(true);
+  const signedIn = useSignedIn();
   /** Set when the owner presses Back: shows an earlier step than the analysis state implies. */
   const [backTo, setBackTo] = useState<"form" | "found" | null>(null);
 
   // Browser-only state (saved progress, guest or user) is read after mount, on the next tick.
   useEffect(() => {
     const handle = setTimeout(() => {
-      setGuest(isGuest());
+      if (!clerkEnabled) setGuest(isGuest());
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (raw) setSaved(JSON.parse(raw) as Saved);
@@ -42,6 +45,32 @@ export function OnboardingFlow() {
     }, 0);
     return () => clearTimeout(handle);
   }, []);
+
+  // With Clerk, "guest" follows the session and the claim; the stand-in keeps its own flag.
+  const isGuestNow = clerkEnabled ? !signedIn || !saved?.claimed : guest;
+
+  // With Clerk, the guest clinic is claimed as soon as the owner comes back signed in. Runs once per clinic.
+  useEffect(() => {
+    if (!clerkEnabled || !signedIn || !saved || saved.claimed) return;
+    let cancelled = false;
+    claimClinic(saved.clinic.id, getGuestId())
+      .then((clinic) => {
+        if (cancelled) return;
+        const next = { ...saved, clinic, claimed: true };
+        setSaved(next);
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+        } catch {
+          /* ignore */
+        }
+      })
+      .catch((e) => {
+        if (!cancelled) setError(e instanceof Error ? e.message : "We couldn't link this clinic to your account.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [signedIn, saved]);
 
   const persist = (value: Saved | null) => {
     setSaved(value);
@@ -121,21 +150,24 @@ export function OnboardingFlow() {
     return <ScanningStage analysis={analysis} disciplines={clinic.disciplines} retrying={busy} onRetry={() => run(async () => setAnalysis(await retryAnalysis(clinic.id, analysis.id)))} />;
   }
   if ((analysis.status === "awaiting_services" || (backTo === "found" && analysis.status === "awaiting_competitors")) && analysis.scan) {
-    // Until Clerk lands on Day 4, "create an account" signs in as the dev user and claims the guest clinic.
+    // With Clerk, "create an account" goes to sign-up and comes back here, where the guest clinic is claimed.
+    // Without it, the development stand-in signs in and claims at once.
     const createAccount = () =>
-      run(async () => {
-        const guestId = getGuestId();
-        setDevUser(DEV_USER_ID);
-        const claimed = await claimClinic(clinic.id, guestId);
-        persist({ clinic: claimed, analysisId: analysis.id });
-        setGuest(false);
-      });
+      clerkEnabled
+        ? router.push(signUpUrl("/start"))
+        : run(async () => {
+            const guestId = getGuestId();
+            setDevUser(DEV_USER_ID);
+            const claimed = await claimClinic(clinic.id, guestId);
+            persist({ clinic: claimed, analysisId: analysis.id });
+            setGuest(false);
+          });
     return (
       <FoundStage
         analysis={analysis}
         disciplines={clinic.disciplines}
         busy={busy}
-        guest={guest}
+        guest={isGuestNow}
         onCreateAccount={createAccount}
         onBack={() => setBackTo("form")}
         onContinue={(services) =>

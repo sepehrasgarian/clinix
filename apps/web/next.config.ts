@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_DEV_USER_ID: process.env.DEV_USER_ID ?? "dev",
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8787",
+    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "",
   },
   transpilePackages: ["@clinix/contracts"],
   turbopack: {

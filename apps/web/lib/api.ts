@@ -7,7 +7,7 @@ import { identityHeaders } from "./identity";
  */
 const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8787";
 
-const headers = () => ({ ...identityHeaders(), "content-type": "application/json" });
+const headers = async () => ({ ...(await identityHeaders()), "content-type": "application/json" });
 
 export class ApiError extends Error {
   constructor(message: string, readonly status: number, readonly code?: string) {
@@ -21,13 +21,13 @@ async function parseError(res: Response): Promise<ApiError> {
 }
 
 async function get<T>(path: string): Promise<T> {
-  const res = await fetch(`${apiUrl}/api${path}`, { headers: headers(), cache: "no-store" });
+  const res = await fetch(`${apiUrl}/api${path}`, { headers: await headers(), cache: "no-store" });
   if (!res.ok) throw await parseError(res);
   return (await res.json()) as T;
 }
 
 async function send<T>(method: "POST" | "PATCH", path: string, body?: unknown): Promise<T> {
-  const res = await fetch(`${apiUrl}/api${path}`, { method, headers: headers(), body: body ? JSON.stringify(body) : undefined });
+  const res = await fetch(`${apiUrl}/api${path}`, { method, headers: await headers(), body: body ? JSON.stringify(body) : undefined });
   if (!res.ok) throw await parseError(res);
   return (await res.json()) as T;
 }

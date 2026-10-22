@@ -1,6 +1,8 @@
+import { browserToken, clerkEnabled, serverToken } from "./auth";
+
 /**
- * Who is calling the API from the browser. Before any account exists, a guest id minted once
- * per browser. After the dev "continue" (and, from Day 4, Clerk sign-in) a user identity.
+ * Who is calling the API. Before any account exists, a guest id minted once per browser. With
+ * Clerk configured, the signed-in user's token; without it, the development stand-in user.
  */
 const GUEST_KEY = "clinix.guest";
 const USER_KEY = "clinix.user";
@@ -31,7 +33,7 @@ export function getUserId(): string | null {
   }
 }
 
-/** Dev-only stand-in for sign-in until Clerk lands. */
+/** Development stand-in for sign-in, used only while Clerk is not configured. */
 export const DEV_USER_ID = process.env.NEXT_PUBLIC_DEV_USER_ID ?? "dev";
 
 /** Fired when the signed-in state changes in this tab, so the nav can follow without a reload. */
@@ -48,9 +50,26 @@ export function setDevUser(id: string) {
 
 export const isGuest = (): boolean => getUserId() === null;
 
-export function identityHeaders(): Record<string, string> {
-  // Server components act as the dev user until Clerk lands (configurable so a real clinic can be viewed).
-  if (typeof window === "undefined") return { "x-user-id": process.env.DEV_USER_ID ?? "dev" };
+export async function identityHeaders(): Promise<Record<string, string>> {
+  if (typeof window === "undefined") {
+    if (!clerkEnabled) return { "x-user-id": process.env.DEV_USER_ID ?? "dev" };
+    const token = await serverToken();
+    return token ? { authorization: `Bearer ${token}` } : {};
+  }
+  if (clerkEnabled) {
+    const token = await browserToken();
+    return token ? { authorization: `Bearer ${token}` } : { "x-guest-id": getGuestId() };
+  }
   const user = getUserId();
   return user ? { "x-user-id": user } : { "x-guest-id": getGuestId() };
+}
+
+/** Forget the development stand-in user in this browser. */
+export function clearDevUser() {
+  try {
+    localStorage.removeItem(USER_KEY);
+  } catch {
+    /* ignore */
+  }
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(AUTH_EVENT));
 }

@@ -7,7 +7,9 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Logo } from "@/components/ui/Logo";
 import { useLanding } from "@/components/i18n/LangProvider";
+import { AccountMenu } from "@/components/auth/AccountMenu";
 import { useSignedIn } from "@/components/auth/useSignedIn";
+import { SIGN_IN_PATH } from "@/lib/auth";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 
 /** Fixed white top bar. The link for the section on screen gets a 2px underline. */
@@ -18,7 +20,7 @@ export function Nav() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const signedIn = useSignedIn();
-  const account = signedIn ? { href: "/app", label: t.account } : { href: "/login", label: t.login };
+  const account = signedIn ? { href: "/app", label: t.account } : { href: SIGN_IN_PATH, label: t.login };
 
   useEffect(() => {
     const hero = document.getElementById("hero");
@@ -54,6 +56,7 @@ export function Nav() {
           ))}
           <Link href="/contact" aria-current={(pathname ?? "").startsWith("/contact") ? "page" : undefined} className="ml-[clamp(14px,1.6vw,30px)] text-[14px] whitespace-nowrap xl:ml-[clamp(16px,2.6vw,39px)] font-medium tracking-[0.04em] text-slate-500 hover:text-ink aria-[current]:font-semibold aria-[current]:text-ink xl:text-[15px]">{t.contact}</Link>
           <Link href={account.href} className="ml-[clamp(14px,1.6vw,30px)] text-[14px] font-medium whitespace-nowrap text-ink xl:ml-[clamp(16px,2.4vw,36px)] xl:text-[15px]">{account.label}</Link>
+          <span className="ml-[clamp(10px,1.2vw,20px)] inline-flex items-center"><AccountMenu /></span>
           <LanguageSwitcher theme="light" className="ml-[clamp(14px,1.6vw,30px)]" />
           <span className="ml-[clamp(14px,1.8vw,27px)] whitespace-nowrap">{demo}</span>
         </nav>

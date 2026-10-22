@@ -6,8 +6,8 @@ import { useLanding } from "@/components/i18n/LangProvider";
 import { DEV_USER_ID, setDevUser } from "@/lib/identity";
 
 /**
- * Real sign-in arrives with Clerk. Until then this page says so, sends visitors to the free analysis, and, outside
- * production only, offers the same test-user stand-in the setup flow already has.
+ * Shown only while Clerk is not configured (a clone without keys): says so, sends visitors to the free
+ * analysis, and, outside production only, offers the test-user stand-in the setup flow already has.
  */
 export function LoginPanel() {
   const t = useLanding().login;

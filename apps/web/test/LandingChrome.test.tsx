@@ -66,7 +66,7 @@ describe("login or account in the nav", () => {
   beforeEach(() => window.localStorage.clear());
   it("offers Login to a visitor with no account, and never My Account", () => {
     render(<Nav />);
-    expect(screen.getByRole("link", { name: "Login" })).toHaveAttribute("href", "/login");
+    expect(screen.getByRole("link", { name: "Login" })).toHaveAttribute("href", "/sign-in");
     expect(screen.queryByRole("link", { name: /my account/i })).toBeNull();
   });
   it("shows My Account, linking to the app, once there is a user", () => {

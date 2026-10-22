@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { ClerkProvider } from "@clerk/nextjs";
+import "@/lib/auth.server";
+import { clerkEnabled } from "@/lib/auth";
 import { LangProvider } from "@/components/i18n/LangProvider";
 import { getLang } from "@/lib/i18n/server";
 import { landingFor } from "@/lib/i18n/landing";
@@ -17,7 +20,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const lang = await getLang();
   return (
     <html lang={lang} className={`${geistSans.variable} ${geistMono.variable}`}>
-      <body><LangProvider lang={lang} landing={landingFor(lang)}>{children}</LangProvider></body>
+      <body>
+        {clerkEnabled ? (
+          <ClerkProvider signInUrl="/sign-in" signUpUrl="/sign-up" signInFallbackRedirectUrl="/app" signUpFallbackRedirectUrl="/start" afterSignOutUrl="/">
+            <LangProvider lang={lang} landing={landingFor(lang)}>{children}</LangProvider>
+          </ClerkProvider>
+        ) : (
+          <LangProvider lang={lang} landing={landingFor(lang)}>{children}</LangProvider>
+        )}
+      </body>
     </html>
   );
 }
