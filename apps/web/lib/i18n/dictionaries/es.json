@@ -195,7 +195,7 @@
  "7 or more": "7 o más",
  "A larger network": "Una red más grande",
  "How many disciplines do you offer?": "¿Cuántas disciplinas ofreces?",
- "Physiotherapy, dental, chiropractic and so on. Count each one you want analysed.": "Fisioterapia, odontología, quiropráctica, etc. Cuenta cada una que quieras analizar.",
+ "Physiotherapy, dental, chiropractic and so on. Count each one you want analyzed.": "Fisioterapia, odontología, quiropráctica, etc. Cuenta cada una que quieras analizar.",
  "1 discipline": "1 disciplina",
  "One clear focus": "Un solo enfoque",
  "2–4 disciplines": "2–4 disciplinas",
@@ -327,5 +327,14 @@
  "Account sign-in is opening soon. Until then you can run a free analysis, and it is saved to this browser.": "El inicio de sesión con cuenta estará disponible pronto. Mientras tanto, puedes hacer un análisis gratuito, que se guarda en este navegador.",
  "Start a free analysis": "Empezar un análisis gratuito",
  "Continue as the test user": "Continuar como usuario de prueba",
- "Development only.": "Solo en desarrollo."
+ "Development only.": "Solo en desarrollo.",
+ "Sign in to your Clinx dashboard.": "Inicia sesión en tu panel de Clinx.",
+ "Sign in": "Iniciar sesión",
+ "No account?": "¿No tienes cuenta?",
+ "Create your account": "Crea tu cuenta",
+ "Start with a free look at your local market.": "Empieza con un vistazo gratuito a tu mercado local.",
+ "Already have an account?": "¿Ya tienes cuenta?",
+ "Password": "Contraseña",
+ "or continue with email": "o continúa con tu correo",
+ "Continue": "Continuar"
 }

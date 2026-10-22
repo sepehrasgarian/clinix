@@ -3,19 +3,26 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Analysis, Clinic, ClinicInput } from "@clinix/contracts";
-import { addCompetitor, claimClinic, confirmCompetitors, confirmServices, createClinic, getAnalysis, retryAnalysis, startAnalysis } from "@/lib/api";
+import { addCompetitor, claimClinic, confirmCompetitors, confirmServices, createClinic, getAnalysis, retryAnalysis, startAnalysis, updateClinic } from "@/lib/api";
 import { clerkEnabled, signUpUrl } from "@/lib/auth";
 import { DEV_USER_ID, getGuestId, isGuest, setDevUser } from "@/lib/identity";
 import { useSignedIn } from "@/components/auth/useSignedIn";
 import { ClinicForm } from "./ClinicForm";
 import { CompetitorsStage } from "./CompetitorsStage";
 import { FoundStage } from "./FoundStage";
+import { GetStartedStage } from "./GetStartedStage";
+import type { BillingDraft } from "@/lib/billingForm";
+import { PaymentStage } from "./PaymentStage";
+import { PlanStage, planFor, type Billing, type PlanDraft } from "./PlanStage";
 import { ScanningStage } from "./ScanningStage";
+import type { PlanId } from "@/lib/pricing";
 
 const STORAGE_KEY = "clinix.onboarding";
 const POLL_MS = 2500;
 
-type Saved = { clinic: Clinic; analysisId: string; claimed?: boolean };
+/** Where the owner is after confirming competitors: the plan, payment and connect steps, before the analysis starts. */
+type Pending = { placeIds: string[]; step: "plan" | "payment" | "connect"; plan: PlanId; billing: Billing };
+type Saved = { clinic: Clinic; analysisId: string; claimed?: boolean; pending?: Pending; /** The competitors ticked so far, kept so Save and exit resumes where the owner stopped. */ draftPlaceIds?: string[]; /** The plan questions answered so far. */ planDraft?: PlanDraft; /** Invoice details entered at checkout (never card details). */ billingDraft?: BillingDraft };
 
 /**
  * Drives setup from step 1 to the start of the deep analysis. The analysis status decides
@@ -128,7 +135,8 @@ export function OnboardingFlow() {
 
   const onSubmitClinic = (input: ClinicInput) =>
     run(async () => {
-      const clinic = await createClinic(input);
+      // Coming back from a later step to edit: the same clinic, changed. A first visit creates it.
+      const clinic = saved?.clinic ? await updateClinic(saved.clinic.id, input) : await createClinic(input);
       const a = await startAnalysis(clinic.id); // a recent scan of the same listing is reused, so this is quick
       persist({ clinic, analysisId: a.id });
       setAnalysis(a);
@@ -147,7 +155,7 @@ export function OnboardingFlow() {
   const { clinic } = saved;
 
   if (analysis.stage === "quick_scan" && (analysis.status === "queued" || analysis.status === "running" || analysis.status === "failed")) {
-    return <ScanningStage analysis={analysis} disciplines={clinic.disciplines} retrying={busy} onRetry={() => run(async () => setAnalysis(await retryAnalysis(clinic.id, analysis.id)))} />;
+    return <ScanningStage analysis={analysis} clinic={clinic} onBack={() => setBackTo("form")} retrying={busy} onRetry={() => run(async () => setAnalysis(await retryAnalysis(clinic.id, analysis.id)))} />;
   }
   if ((analysis.status === "awaiting_services" || (backTo === "found" && analysis.status === "awaiting_competitors")) && analysis.scan) {
     // With Clerk, "create an account" goes to sign-up and comes back here, where the guest clinic is claimed.
@@ -165,7 +173,7 @@ export function OnboardingFlow() {
     return (
       <FoundStage
         analysis={analysis}
-        disciplines={clinic.disciplines}
+        clinicOpened={clinic.opened}
         busy={busy}
         guest={isGuestNow}
         onCreateAccount={createAccount}
@@ -180,7 +188,55 @@ export function OnboardingFlow() {
     );
   }
   if (analysis.stage === "discovery" && analysis.status !== "awaiting_competitors") {
-    return <ScanningStage analysis={analysis} disciplines={clinic.disciplines} retrying={busy} onRetry={() => run(async () => setAnalysis(await retryAnalysis(clinic.id, analysis.id)))} />;
+    return <ScanningStage analysis={analysis} clinic={clinic} onBack={() => setBackTo("form")} retrying={busy} onRetry={() => run(async () => setAnalysis(await retryAnalysis(clinic.id, analysis.id)))} />;
+  }
+  if (analysis.status === "awaiting_competitors" && saved.pending) {
+    const pending = saved.pending;
+    const go = (patch: Partial<Pending>) => persist({ ...saved, pending: { ...pending, ...patch } });
+    if (pending.step === "plan") {
+      return <PlanStage
+          clinic={clinic}
+          disciplines={clinic.disciplines}
+          plan={pending.plan}
+          billing={pending.billing}
+          draft={saved.planDraft}
+          onDraft={(planDraft) => persist({ ...saved, planDraft })}
+          onChange={(next) => go(next)}
+          onBack={() => persist({ ...saved, pending: undefined })}
+          onEditClinic={() => { persist({ ...saved, pending: undefined }); setBackTo("form"); }}
+          onContinue={() => go({ step: "payment" })}
+        />;
+    }
+    if (pending.step === "payment") {
+      return <PaymentStage
+          clinic={clinic}
+          plan={pending.plan}
+          billing={pending.billing}
+          draft={saved.billingDraft}
+          onDraft={(billingDraft) => persist({ ...saved, billingDraft })}
+          onBilling={(billing) => go({ billing })}
+          onBack={() => go({ step: "plan" })}
+          onContinue={() => go({ step: "connect" })}
+        />;
+    }
+    return (
+      <GetStartedStage
+        clinic={clinic}
+        place={analysis.scan?.place}
+        locations={saved.planDraft?.locations ?? 1}
+        competitors={pending.placeIds.length}
+        busy={busy}
+        error={error}
+        onBack={() => go({ step: "payment" })}
+        onStart={() =>
+          run(async () => {
+            await confirmCompetitors(clinic.id, analysis.id, pending.placeIds);
+            persist(null);
+            router.push(`/app/clinics/${clinic.id}/run/${analysis.id}`);
+          })
+        }
+      />
+    );
   }
   if (analysis.status === "awaiting_competitors" && analysis.discovery) {
     return (
@@ -189,14 +245,11 @@ export function OnboardingFlow() {
         disciplines={clinic.disciplines}
         busy={busy}
         onBack={() => setBackTo("found")}
-        onAdd={async (q) => setAnalysis({ ...analysis, discovery: await addCompetitor(clinic.id, analysis.id, q) })}
-        onConfirm={(placeIds) =>
-          run(async () => {
-            await confirmCompetitors(clinic.id, analysis.id, placeIds);
-            persist(null);
-            router.push(`/app/clinics/${clinic.id}/run/${analysis.id}`);
-          })
-        }
+        onAdd={async (pick) => setAnalysis({ ...analysis, discovery: await addCompetitor(clinic.id, analysis.id, pick) })}
+        city={clinic.city}
+        initialSelected={saved.draftPlaceIds}
+        onSelectionChange={(ids) => persist({ ...saved, draftPlaceIds: ids })}
+        onConfirm={(placeIds) => persist({ ...saved, pending: { placeIds, step: "plan", plan: planFor(clinic.disciplines.length), billing: "annual" } })}
       />
     );
   }

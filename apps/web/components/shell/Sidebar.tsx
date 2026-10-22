@@ -1,7 +1,7 @@
 "use client";
 
 import clsx from "clsx";
-import { ArrowLeftRight, Building2, ChevronsUpDown, ClipboardList, FileText, Layers, LayoutDashboard, MessageSquareText, Plus, Search } from "lucide-react";
+import { Activity, ArrowLeftRight, Building2, ChevronsUpDown, ClipboardList, FileText, Layers, LayoutDashboard, MessageSquareText, Plus, Search } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { Clinic } from "@clinix/contracts";
@@ -14,7 +14,7 @@ export function Sidebar({ clinic, clinics = [clinic], onOpenChat }: { clinic: Cl
   const pathname = usePathname();
   const router = useRouter();
   const base = `/app/clinics/${clinic.id}`;
-  const items = [
+  const items: { href: string; label: string; icon: typeof Activity; exact?: boolean }[] = [
     { href: base, label: copy.nav.dashboard, icon: LayoutDashboard, exact: true },
     { href: `${base}/report`, label: copy.nav.report, icon: FileText },
     { href: `${base}/findings`, label: copy.nav.findings, icon: Search },
@@ -23,14 +23,16 @@ export function Sidebar({ clinic, clinics = [clinic], onOpenChat }: { clinic: Cl
     { href: `${base}/competitors`, label: copy.nav.competitors, icon: Building2 },
     { href: `${base}/compare`, label: copy.nav.compare, icon: ArrowLeftRight },
   ];
+  // While an analysis is open, it is the current place in the app: one extra entry, highlighted, that goes nowhere new.
+  if (pathname.startsWith(`${base}/run/`)) items.splice(1, 0, { href: pathname, label: copy.nav.analysis, icon: Activity, exact: true });
   const switchClinic = (id: string) => {
     const rest = pathname.startsWith(base) ? pathname.slice(base.length) : "";
     router.push(`/app/clinics/${id}${rest.startsWith("/run") ? "" : rest}`);
   };
   return (
-    <aside className="flex w-full flex-col gap-6 border-b border-line bg-card p-4 md:min-h-screen md:w-60 md:border-r md:border-b-0">
+    <aside className="flex w-full flex-col gap-6 border-b border-[#eceef5] bg-gradient-to-b from-[#fbfbff] to-[#f4f5fc] p-4 md:sticky md:top-0 md:h-screen md:w-[248px] md:shrink-0 md:overflow-y-auto md:border-r md:border-b-0 md:px-5 md:py-7">
       <Logo surface="light" height={22} href={base} className="px-1" />
-      <div className="rounded-xl border border-line bg-surface px-3 py-2">
+      <div className="rounded-2xl bg-white px-3.5 py-3 shadow-[0_14px_34px_-24px_rgba(76,70,180,.45)] ring-1 ring-[#ecedf5]">
         <label htmlFor="clinic-switcher" className="text-xs text-faint">Clinic</label>
         {clinics.length > 1 ? (
           <div className="relative">
@@ -55,15 +57,16 @@ export function Sidebar({ clinic, clinics = [clinic], onOpenChat }: { clinic: Cl
               key={href}
               href={href}
               aria-current={active ? "page" : undefined}
-              className={clsx("flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium", active ? "bg-primary-soft text-primary" : "text-muted hover:bg-surface hover:text-ink")}
+              className={clsx("relative flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium", active ? "bg-[#eeefff] font-semibold text-primary" : "text-ink-grey hover:bg-white hover:text-ink")}
             >
+              {active && <span aria-hidden className="absolute top-2 bottom-2 -left-5 hidden w-[3px] rounded-r-full bg-primary md:block" />}
               <Icon aria-hidden size={18} />
               {label}
             </Link>
           );
         })}
       </nav>
-      <button type="button" onClick={onOpenChat} className="mt-auto flex min-h-11 items-center gap-3 rounded-lg border border-line px-3 text-sm font-medium hover:bg-surface">
+      <button type="button" onClick={onOpenChat} className="mt-auto flex min-h-11 items-center gap-3 rounded-2xl bg-white px-3.5 text-sm font-medium ring-1 ring-[#ecedf5] hover:ring-primary/30">
         <MessageSquareText aria-hidden size={18} className="text-primary" />
         {copy.nav.chat}
       </button>

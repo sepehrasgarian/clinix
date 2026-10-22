@@ -55,6 +55,10 @@ export const setRecommendationStatus = (clinicId: string, analysisId: string, re
   patch<Recommendation>(`/clinics/${clinicId}/analyses/${analysisId}/recommendations/${recommendationId}`, { status });
 
 export const photoUrl = (photoName: string) => `${apiUrl}/api/photo/${photoName}`;
+/** The clinic's logo, taken from its website by the API. A 404 means the site has none. */
+/** The clinic's logo: by its website's domain when we have one (works before a listing is confirmed), else by listing. */
+export const logoUrl = ({ site, placeId }: { site?: string | null; placeId?: string }) =>
+  site ? `${apiUrl}/api/logo/site/${encodeURIComponent(site)}?v=2` : `${apiUrl}/api/logo/${encodeURIComponent(placeId ?? "")}?v=2`;
 
 // ---- Onboarding ----
 
@@ -63,7 +67,23 @@ export const searchClinics = (q: string, city = ""): Promise<Place[]> =>
 
 export const createClinic = (input: ClinicInput): Promise<Clinic> => post<Clinic>("/clinics", input);
 
-export type MarketCard = { nearby: number; leaderName?: string; leaderReviewCount?: number; averageRating?: number };
+/** The owner went back and changed their answers: the same clinic, not a new one. */
+export const updateClinic = (clinicId: string, input: ClinicInput): Promise<Clinic> => patch<Clinic>(`/clinics/${clinicId}`, input);
+
+export type MarketCard = {
+  nearby: number;
+  /** How far the market was searched, in km. */
+  radiusKm?: number;
+  leaderName?: string;
+  leaderReviewCount?: number;
+  averageRating?: number;
+  yourReviews?: number;
+  /** The clinic's place by review count among the clinics counted, itself included. */
+  rank?: number;
+  total?: number;
+  /** How many times the leader's reviews exceed the clinic's own. */
+  reviewGap?: number;
+};
 export const getMarketCard = (placeId: string, disciplines: string[]): Promise<MarketCard> =>
   get<MarketCard>(`/lookup/market-card?placeId=${encodeURIComponent(placeId)}&disciplines=${disciplines.join(",")}`);
 
@@ -80,8 +100,8 @@ export const confirmServices = (clinicId: string, analysisId: string, services: 
 export const confirmCompetitors = (clinicId: string, analysisId: string, placeIds: string[]): Promise<Analysis> =>
   post<Analysis>(`/clinics/${clinicId}/analyses/${analysisId}/competitors`, { placeIds });
 
-export const addCompetitor = (clinicId: string, analysisId: string, query: string): Promise<DiscoveryResult> =>
-  post<DiscoveryResult>(`/clinics/${clinicId}/analyses/${analysisId}/competitors/add`, { query });
+export const addCompetitor = (clinicId: string, analysisId: string, pick: { placeId: string } | { query: string }): Promise<DiscoveryResult> =>
+  post<DiscoveryResult>(`/clinics/${clinicId}/analyses/${analysisId}/competitors/add`, pick);
 
 export const retryAnalysis = (clinicId: string, analysisId: string): Promise<Analysis> =>
   post<Analysis>(`/clinics/${clinicId}/analyses/${analysisId}/retry`);

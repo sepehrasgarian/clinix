@@ -195,7 +195,7 @@
  "7 or more": "7 и больше",
  "A larger network": "Крупная сеть",
  "How many disciplines do you offer?": "Сколько направлений вы предлагаете?",
- "Physiotherapy, dental, chiropractic and so on. Count each one you want analysed.": "Физиотерапия, стоматология, хиропрактика и т. д. Считайте каждое направление, которое нужно проанализировать.",
+ "Physiotherapy, dental, chiropractic and so on. Count each one you want analyzed.": "Физиотерапия, стоматология, хиропрактика и т. д. Считайте каждое направление, которое нужно проанализировать.",
  "1 discipline": "1 направление",
  "One clear focus": "Одна специализация",
  "2–4 disciplines": "2–4 направления",
@@ -327,5 +327,14 @@
  "Account sign-in is opening soon. Until then you can run a free analysis, and it is saved to this browser.": "Вход в аккаунт скоро откроется. А пока вы можете выполнить бесплатный анализ — он сохранится в этом браузере.",
  "Start a free analysis": "Начать бесплатный анализ",
  "Continue as the test user": "Продолжить как тестовый пользователь",
- "Development only.": "Только для разработки."
+ "Development only.": "Только для разработки.",
+ "Sign in to your Clinx dashboard.": "Войдите в личный кабинет Clinx.",
+ "Sign in": "Войти",
+ "No account?": "Нет аккаунта?",
+ "Create your account": "Создайте аккаунт",
+ "Start with a free look at your local market.": "Начните с бесплатного обзора вашего местного рынка.",
+ "Already have an account?": "Уже есть аккаунт?",
+ "Password": "Пароль",
+ "or continue with email": "или продолжите по эл. почте",
+ "Continue": "Продолжить"
 }

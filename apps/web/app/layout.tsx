@@ -7,6 +7,7 @@ import { clerkEnabled } from "@/lib/auth";
 import { LangProvider } from "@/components/i18n/LangProvider";
 import { getLang } from "@/lib/i18n/server";
 import { landingFor } from "@/lib/i18n/landing";
+import { clerkLocalization } from "@/lib/authLocalization";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin", "latin-ext", "cyrillic"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin", "latin-ext", "cyrillic"] });
@@ -22,7 +23,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang={lang} className={`${geistSans.variable} ${geistMono.variable}`}>
       <body>
         {clerkEnabled ? (
-          <ClerkProvider signInUrl="/sign-in" signUpUrl="/sign-up" signInFallbackRedirectUrl="/app" signUpFallbackRedirectUrl="/start" afterSignOutUrl="/">
+          <ClerkProvider appearance={{ cssLayerName: "clerk" }} localization={clerkLocalization(landingFor(lang).auth)} signInUrl="/sign-in" signUpUrl="/sign-up" signInFallbackRedirectUrl="/app" signUpFallbackRedirectUrl="/start" afterSignOutUrl="/">
             <LangProvider lang={lang} landing={landingFor(lang)}>{children}</LangProvider>
           </ClerkProvider>
         ) : (

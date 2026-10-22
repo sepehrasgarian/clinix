@@ -1,54 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, ClipboardList, Layers, RotateCw, ShieldCheck, Sparkles } from "lucide-react";
-import { primaryDiscipline, type Analysis, type Clinic } from "@clinix/contracts";
-import { PhaseTimeline } from "@/components/onboarding/PhaseTimeline";
-import { Sticker } from "@/components/onboarding/Sticker";
-import { WaitingRadar } from "@/components/onboarding/WaitingRadar";
-import { Card } from "@/components/ui/Card";
-import { Stars } from "@/components/ui/Stars";
-import { copy } from "@/lib/copy";
-import { formatKm } from "@/lib/format";
+import { ArrowLeft, Bell, BarChart3, ClipboardList, Layers, ShieldCheck, CircleCheck } from "lucide-react";
+import type { Analysis, Clinic } from "@clinix/contracts";
 import { retryAnalysis } from "@/lib/api";
+import { copy } from "@/lib/copy";
+import { RunCompetitors } from "./RunCompetitors";
+import { RunProgress } from "./RunProgress";
 
-const deliverables = [
-  { icon: ShieldCheck, title: "Findings with evidence", text: "Every finding quotes at least two reviews, checked word for word." },
-  { icon: Sparkles, title: "Your scorecard", text: "Seven measured dimensions against the rivals you chose." },
-  { icon: ClipboardList, title: "A ranked action plan", text: "What to do first, with the first step for each action." },
-  { icon: Layers, title: "One section per discipline", text: "Who leads each discipline locally and what to do there." },
-];
+const card = "rounded-[22px] border border-[#ecedf5] bg-white shadow-[0_18px_44px_-34px_rgba(76,70,180,.4)]";
+const getIcons = [ShieldCheck, BarChart3, ClipboardList, Layers];
 
-function elapsedSince(iso?: string): string {
-  if (!iso) return "";
-  const s = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000));
-  return s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${s % 60}s`;
-}
-
-/** The "Your report" step: live progress of the deep analysis, who is being read, and what comes out. */
+/** The page after "Start my first analysis": the real state of the run, who is read, what comes out, and the way to the report. */
 export function RunView({ clinic, analysis, onRefresh }: { clinic: Clinic; analysis: Analysis; onRefresh: () => void }) {
+  const t = copy.onboarding.run;
   const done = analysis.status === "succeeded";
   const failed = analysis.status === "failed";
-  const running = !done && !failed;
-  const [, tick] = useState(0);
   const [retrying, setRetrying] = useState(false);
-  useEffect(() => {
-    if (!running) return;
-    const id = setInterval(() => tick((n) => n + 1), 1000);
-    return () => clearInterval(id);
-  }, [running]);
-
-  const phasesDone = analysis.phases.filter((p) => p.status === "done").length;
-  const pct = Math.round((phasesDone / Math.max(1, analysis.phases.length)) * 100);
-  const startedAt = analysis.phases.find((p) => p.startedAt)?.startedAt;
+  const [retryError, setRetryError] = useState<string | null>(null);
   const chosen = analysis.discovery?.candidates.filter((c) => analysis.discovery!.selectedPlaceIds.includes(c.place.placeId)) ?? [];
+  const base = `/app/clinics/${clinic.id}`;
 
   const retry = async () => {
     setRetrying(true);
+    setRetryError(null);
     try {
       await retryAnalysis(clinic.id, analysis.id);
       onRefresh();
+    } catch (e) {
+      setRetryError(e instanceof Error ? e.message : "We couldn't retry just now.");
     } finally {
       setRetrying(false);
     }
@@ -56,101 +37,43 @@ export function RunView({ clinic, analysis, onRefresh }: { clinic: Clinic; analy
 
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="flex -space-x-2">{clinic.disciplines.slice(0, 3).map((d) => <Sticker key={d} discipline={d} size={40} />)}</div>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">{done ? copy.onboarding.run.done : copy.onboarding.run.title}</h1>
-            <p className="text-muted">{done ? clinic.name : copy.onboarding.run.intro}</p>
-          </div>
-        </div>
-        {done && (
-          <Link href={`/app/clinics/${clinic.id}/findings`} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-primary px-6 text-sm font-semibold text-white shadow-[0_8px_24px_-10px_rgba(67,56,202,.8)]">
-            {copy.onboarding.run.open} <span aria-hidden>→</span>
-          </Link>
-        )}
-      </header>
+      <div>
+        <Link href={base} className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-[#e3e6f2] bg-white px-[18px] text-sm font-semibold shadow-sm hover:border-primary/40"><ArrowLeft size={16} aria-hidden />{t.backToDashboard}</Link>
+        <h1 className="mt-5 text-[clamp(30px,3.4vw,42px)] leading-[1.08] font-bold tracking-[-0.04em]">
+          {done ? t.readyTitle : failed ? t.stoppedTitle : <>{t.titleStart}<span className="bg-gradient-to-r from-[#4338ca] to-[#7c6cf5] bg-clip-text text-transparent">{t.titleAccent}</span></>}
+        </h1>
+        <p className="mt-3 max-w-[640px] text-[16px] leading-relaxed text-ink-grey">{done ? t.readyText : failed ? t.stoppedText : t.intro}</p>
+      </div>
 
-      {failed && (
-        <Card className="border-alert/30 bg-alert-soft p-5" role="alert">
-          <div className="flex items-start gap-3">
-            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-alert text-white"><AlertTriangle size={16} aria-hidden /></span>
-            <div className="flex-1">
-              <p className="font-semibold text-alert">{copy.onboarding.scanning.failed}</p>
-              <p className="mt-0.5 text-sm">{analysis.error}</p>
-              <button type="button" onClick={retry} disabled={retrying} className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-white disabled:opacity-50">
-                <RotateCw size={16} aria-hidden className={retrying ? "animate-spin" : ""} /> {retrying ? "Retrying…" : copy.onboarding.scanning.retry}
-              </button>
-            </div>
-          </div>
-        </Card>
+      {done && (
+        <section className="flex flex-wrap items-center gap-4 rounded-[22px] border border-[#cfeedd] bg-[#f3fbf7] p-[22px]" aria-label="Analysis ready">
+          <span className="grid size-11 place-items-center rounded-full bg-[#22a06b] text-white" aria-hidden><CircleCheck size={22} /></span>
+          <p className="min-w-[200px] flex-1 text-[15px] font-medium">Every finding in it is backed by reviews we checked word for word.</p>
+          <Link href={`${base}/findings`} className="inline-flex h-12 items-center gap-2 rounded-[12px] bg-gradient-to-r from-[#4338ca] to-[#5b5cf0] px-7 text-[15px] font-semibold text-white shadow-[0_12px_28px_-12px_rgba(67,56,202,.8)]">{t.open} <span aria-hidden>→</span></Link>
+          <Link href={base} className="inline-flex h-12 items-center rounded-[12px] border border-[#dfe2f1] bg-white px-6 text-[15px] font-semibold hover:border-primary/40">{t.dashboard}</Link>
+        </section>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[3fr_2fr]">
-        <div className="flex flex-col gap-6">
-          <Card className="p-6">
-            <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
-              <div className="relative grid size-28 shrink-0 place-items-center" aria-hidden>
-                <svg viewBox="0 0 36 36" className="absolute inset-0 size-full -rotate-90">
-                  <circle cx="18" cy="18" r="15.5" fill="none" stroke="var(--color-line)" strokeWidth="3" />
-                  <circle cx="18" cy="18" r="15.5" fill="none" stroke={done ? "var(--color-success)" : "var(--color-primary)"} strokeWidth="3" strokeLinecap="round" strokeDasharray={`${(pct / 100) * 97.4} 97.4`} className="transition-[stroke-dasharray] duration-700" />
-                </svg>
-                <div className="text-center">
-                  <p className="font-mono text-2xl font-semibold tabular-nums">{pct}%</p>
-                  <p className="text-[11px] text-muted">{phasesDone}/{analysis.phases.length} steps</p>
-                </div>
-              </div>
-              <div className="min-w-0 flex-1">
-                {running ? (
-                  <WaitingRadar stage={analysis.stage} clinicName={clinic.name} compact />
-                ) : done ? (
-                  <p className="text-lg font-medium">Your report is ready. Every finding in it is backed by reviews we checked word for word.</p>
-                ) : (
-                  <p className="text-muted">Nothing is running. Press retry to continue.</p>
-                )}
-                {running && startedAt && <p className="mt-3 font-mono text-xs text-faint tabular-nums">running for {elapsedSince(startedAt)}</p>}
-              </div>
-            </div>
-          </Card>
-          <Card className="p-6">
-            <PhaseTimeline phases={analysis.phases} />
-          </Card>
-        </div>
+      <div className="grid gap-6 xl:grid-cols-[1.85fr_1fr]">
+        <div className="flex flex-col gap-6">{!done && <RunProgress analysis={analysis} base={base} onRetry={retry} retrying={retrying} retryError={retryError} />}</div>
+        <RunCompetitors competitors={chosen} />
+      </div>
 
-        <div className="flex flex-col gap-6">
-          <Card className="p-5">
-            <h2 className="font-semibold">Who we are reading</h2>
-            <p className="mt-0.5 text-xs text-muted">{chosen.length} competitors you confirmed, plus your own reviews.</p>
-            <ul className="mt-3 divide-y divide-line">
-              {chosen.map((c) => (
-                <li key={c.place.placeId} className="flex items-center gap-3 py-2.5">
-                  <Sticker discipline={primaryDiscipline(c.disciplines, clinic.disciplines)} size={28} tilt={false} className="rounded-lg border-2" />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{c.place.name}</p>
-                    <p className="text-xs text-muted">{formatKm(c.distanceKm)} {copy.competitors.distance}</p>
-                  </div>
-                  {c.place.rating !== undefined && (
-                    <span className="flex shrink-0 items-center gap-1 text-xs text-muted"><Stars rating={c.place.rating} size={11} /> {c.place.reviewCount}</span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </Card>
-          <Card className="p-5">
-            <h2 className="font-semibold">What you will get</h2>
-            <ul className="mt-3 space-y-3">
-              {deliverables.map(({ icon: Icon, title, text }) => (
-                <li key={title} className="flex gap-3">
-                  <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary-soft text-primary"><Icon size={16} aria-hidden /></span>
-                  <div>
-                    <p className="text-sm font-medium">{title}</p>
-                    <p className="text-xs text-muted">{text}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </Card>
-        </div>
+      <div className="grid gap-6 xl:grid-cols-[1.85fr_1fr]">
+        <section className={`${card} p-[22px]`} aria-labelledby="get-title">
+          <h2 id="get-title" className="text-[17px] font-bold">{t.getTitle}</h2>
+          <p className="mt-0.5 text-[13px] text-ink-grey">{t.getText}</p>
+          <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {t.gets.map((g, i) => { const Icon = getIcons[i]; return (
+              <li key={g.title} className="rounded-2xl border border-[#ecedf5] p-4"><span className="grid size-10 place-items-center rounded-xl bg-[#eeefff] text-primary" aria-hidden><Icon size={17} /></span><h3 className="mt-3 text-[14px] font-bold">{g.title}</h3><p className="mt-1 text-[12.5px] leading-snug text-ink-grey">{g.text}</p></li>
+            ); })}
+          </ul>
+        </section>
+        {!done && !failed && (
+          <section className={`${card} p-[22px]`} aria-labelledby="notify-title">
+            <div className="flex items-start gap-3.5"><span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#eeefff] text-primary" aria-hidden><Bell size={17} /></span><div><h2 id="notify-title" className="text-[16px] font-bold">{t.notifyTitle}</h2><p className="mt-1 text-[13px] leading-snug text-ink-grey">{t.notifyText}</p></div></div>
+          </section>
+        )}
       </div>
     </div>
   );

@@ -5,5 +5,5 @@ import { fileURLToPath } from "node:url";
 export default defineConfig({
   plugins: [react()],
   resolve: { alias: { "@": fileURLToPath(new URL(".", import.meta.url)) } },
-  test: { globals: true, environment: "jsdom", setupFiles: ["./test/setup.ts"], include: ["test/**/*.test.tsx"] },
+  test: { globals: true, environment: "jsdom", setupFiles: ["./test/setup.ts"], include: ["test/**/*.test.{ts,tsx}"] },
 });

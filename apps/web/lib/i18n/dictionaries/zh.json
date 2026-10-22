@@ -195,7 +195,7 @@
  "7 or more": "7 个及以上",
  "A larger network": "更大的网络",
  "How many disciplines do you offer?": "您提供几个专业方向？",
- "Physiotherapy, dental, chiropractic and so on. Count each one you want analysed.": "理疗、牙科、脊骨神经科等。请计入每个您希望分析的专业。",
+ "Physiotherapy, dental, chiropractic and so on. Count each one you want analyzed.": "理疗、牙科、脊骨神经科等。请计入每个您希望分析的专业。",
  "1 discipline": "1 个专业",
  "One clear focus": "专注单一方向",
  "2–4 disciplines": "2–4 个专业",
@@ -327,5 +327,14 @@
  "Account sign-in is opening soon. Until then you can run a free analysis, and it is saved to this browser.": "账户登录即将开放。在此之前，您可以先做一次免费分析，结果会保存在此浏览器中。",
  "Start a free analysis": "开始免费分析",
  "Continue as the test user": "以测试用户继续",
- "Development only.": "仅限开发环境。"
+ "Development only.": "仅限开发环境。",
+ "Sign in to your Clinx dashboard.": "登录您的 Clinx 控制台。",
+ "Sign in": "登录",
+ "No account?": "还没有账户？",
+ "Create your account": "创建您的账户",
+ "Start with a free look at your local market.": "先免费了解您的本地市场。",
+ "Already have an account?": "已有账户？",
+ "Password": "密码",
+ "or continue with email": "或使用邮箱继续",
+ "Continue": "继续"
 }

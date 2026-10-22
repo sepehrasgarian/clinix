@@ -68,7 +68,7 @@ describe("dictionaries", () => {
     }
   });
   it.each(nonEnglish)("%s: covers the landing page except names that stay as they are", (lang) => {
-    const stays = new Set(["Montréal, QC", "Toronto, ON", "Vancouver, BC", "Essential", "Growth", "Scale", "Google Analytics + Search Console", "Jane App URL", "yourclinic.janeapp.com", "Alex Dupont", "alex@clinic.ca", "LinkedIn", "Instagram", "Facebook", "Toronto, ON, Canada"]);
+    const stays = new Set(["Montréal, QC", "Toronto, ON", "Vancouver, BC", "Essential", "Growth", "Scale", "Google Analytics + Search Console", "Jane App URL", "yourclinic.janeapp.com", "Alex Dupont", "alex@clinic.ca", "you@clinic.com", "LinkedIn", "Instagram", "Facebook", "Toronto, ON, Canada"]);
     const keys = new Set(["features", "how-it-works", "numbers", "pricing", "blog", "success", "primary", "info", "neutral", "alert", "warning", "locations", "disciplines", "seo", "strategy", "EN"]);
     const missing = english.filter((s) => /[A-Za-z]{2,}/.test(s) && !/^(https?:|mailto:|tel:|\/|#[a-z]|info@|\+1)/.test(s) && !stays.has(s) && !keys.has(s) && !dictionaries[lang]?.[s]);
     expect(missing).toEqual([]);
