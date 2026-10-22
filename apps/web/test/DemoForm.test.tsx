@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { DemoForm, demoMailto, isValidEmail, requiredStatus } from "@/components/demo/DemoForm";
 
@@ -35,12 +35,13 @@ describe("demo form", () => {
     expect(body).toContain("Jane App URL: c.janeapp.com");
     expect(body).toContain("Focus on reviews");
   });
-  it("keeps a draft on this device and restores it", () => {
+  it("keeps a draft on this device and restores it", async () => {
     const { unmount } = render(<DemoForm />);
+    await act(() => new Promise((r) => setTimeout(r, 0))); // the form is ready to save once the draft check has run
     fill(/full name/i, "Sam Lee");
     unmount();
     render(<DemoForm />);
-    expect(screen.getByLabelText(/full name/i)).toHaveValue("Sam Lee");
+    await waitFor(() => expect(screen.getByLabelText(/full name/i)).toHaveValue("Sam Lee"));
   });
   it("shows the optional details only when asked", () => {
     render(<DemoForm />);

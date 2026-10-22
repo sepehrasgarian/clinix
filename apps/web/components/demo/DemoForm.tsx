@@ -36,11 +36,17 @@ export function DemoForm() {
   const loaded = useRef(false);
 
   useEffect(() => {
-    try {
-      const saved = window.localStorage.getItem(DRAFT_KEY);
-      if (saved) setV({ ...empty, ...JSON.parse(saved) });
-    } catch { /* private window or blocked storage: start empty */ }
-    loaded.current = true;
+    // The draft is read at once but applied after mount, so the first paint is never replaced mid-render
+    // and the empty form is never saved over a real draft.
+    let saved: string | null = null;
+    try { saved = window.localStorage.getItem(DRAFT_KEY); } catch { /* private window or blocked storage: start empty */ }
+    const handle = setTimeout(() => {
+      if (saved) {
+        try { setV({ ...empty, ...JSON.parse(saved) }); } catch { /* a corrupt draft is ignored */ }
+      }
+      loaded.current = true;
+    }, 0);
+    return () => clearTimeout(handle);
   }, []);
 
   useEffect(() => {

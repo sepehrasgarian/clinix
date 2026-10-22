@@ -17,7 +17,7 @@ export function CountUp({ value, prefix = "", suffix = "" }: { value: number; pr
       observer.disconnect();
       const start = performance.now();
       const tick = (now: number) => {
-        const t = Math.min((now - start) / 1200, 1);
+        const t = Math.min(Math.max((now - start) / 1200, 0), 1);
         setShown(Math.round(value * (1 - Math.pow(1 - t, 3))));
         if (t < 1) frame = requestAnimationFrame(tick);
       };
