@@ -45,3 +45,10 @@ export async function transferClinic(id: string, fromOwnerId: string, toOwnerId:
   });
   return rows.length ? Clinic.parse(toPlain(rows[0])) : null;
 }
+
+const sameText = (a: string, b: string) => a.trim().toLowerCase().replace(/\s+/g, " ") === b.trim().toLowerCase().replace(/\s+/g, " ");
+
+/** The owner's clinic with this name at this address, if they already set it up. */
+export async function findClinic(ownerId: string, name: string, address: string): Promise<Clinic | null> {
+  return (await listClinics(ownerId)).find((c) => sameText(c.name, name) && sameText(c.address, address)) ?? null;
+}

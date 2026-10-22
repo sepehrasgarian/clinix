@@ -11,7 +11,8 @@ import { distanceKm, ringFor } from "../lib/geo.js";
 
 const ServicesBody = z.object({ services: z.array(z.string().min(1)).min(1).max(12) });
 const SelectionBody = z.object({ placeIds: z.array(z.string().min(1)).max(40) });
-const AddCompetitorBody = z.object({ query: z.string().min(2).max(120) });
+/** A listing the owner picked from the lookup (`placeId`), or a name to search for. */
+const AddCompetitorBody = z.object({ placeId: z.string().min(1).max(200) }).or(z.object({ query: z.string().min(2).max(120) }));
 const StatusBody = z.object({ status: z.enum(["todo", "in_progress", "done"]) });
 
 /** Routes under /clinics/:id/analyses. `deps` and `run` are injected so tests can use fakes. */
@@ -76,7 +77,7 @@ export function analysesRoutes(deps: PipelineDeps, run: StageRunners = stageRunn
       void run.deep(analysis.id, deps);
       return c.json(moved, 202);
     })
-    // The owner adds a competitor we missed, by name. It joins the candidate list as "strong".
+    // The owner adds a competitor we missed, picked from the lookup or by name. It joins the candidate list as "strong".
     .post("/:aid/competitors/add", async (c) => {
       const clinic = await getClinic(c.req.param("id")!, c.get("userId"));
       if (!clinic) return c.json({ error: "not found" }, 404);
@@ -84,10 +85,13 @@ export function analysesRoutes(deps: PipelineDeps, run: StageRunners = stageRunn
       if (!analysis || analysis.clinicId !== clinic.id) return c.json({ error: "not found" }, 404);
       if (analysis.status !== "awaiting_competitors" || !analysis.discovery) return c.json({ error: "analysis is not awaiting competitors" }, 409);
       const body = AddCompetitorBody.safeParse(await c.req.json().catch(() => null));
-      if (!body.success) return c.json({ error: "query required" }, 400);
+      if (!body.success) return c.json({ error: "placeId or query required" }, 400);
       const center = { lat: clinic.lat ?? 0, lng: clinic.lng ?? 0 };
-      const [place] = await deps.places.searchText(`${body.data.query} ${clinic.city}`, { near: center, radiusM: 15000, max: 1 });
+      const place = "placeId" in body.data
+        ? await deps.places.details(body.data.placeId).catch(() => null)
+        : (await deps.places.searchText(`${body.data.query} ${clinic.city}`, { near: center, radiusM: 15000, max: 1 }))[0];
       if (!place) return c.json({ error: "No clinic matched that name nearby." }, 404);
+      if (place.placeId === clinic.placeId) return c.json({ error: "That is your own clinic, not a competitor." }, 422);
       if (analysis.discovery.candidates.some((k) => k.place.placeId === place.placeId)) return c.json(analysis.discovery);
       const km = distanceKm(center, place);
       const candidate: CompetitorCandidate = { place, distanceKm: Math.round(km * 10) / 10, ring: ringFor(km), relevance: 100, flag: "strong", reason: "Added by the owner.", disciplines: clinic.disciplines };

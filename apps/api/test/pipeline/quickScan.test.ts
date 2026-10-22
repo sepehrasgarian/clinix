@@ -82,6 +82,20 @@ describe("marketPreview", () => {
     expect(stats.leaderReviewCount).toBe(310);
     expect(stats.averageRating).toBeCloseTo(4.5, 5);
   });
+  it("lists the nearby clinics nearest first with their distance, and measures their medians", async () => {
+    const deps = fakeDeps();
+    const { nearby, capped, stats } = await marketPreview(clinic, own, ["cleaning", "Invisalign"], deps);
+    expect(nearby.length).toBe(2);
+    expect(nearby.map((c) => c.distanceKm)).toEqual([...nearby.map((c) => c.distanceKm)].sort((a, b) => a - b));
+    expect(nearby[0]).toMatchObject({ placeId: expect.any(String), name: expect.any(String), lat: expect.any(Number), lng: expect.any(Number) });
+    expect(capped).toBe(false);
+    expect(stats.nearbyCount).toBe(2);
+  });
+  it("says the count is a floor when a search came back full", async () => {
+    const full = Array.from({ length: 20 }, (_, i) => peer(`p_${i}`, 4.5, 100 + i));
+    const deps = fakeDeps({ places: { searchText: vi.fn(async () => full) } });
+    expect((await marketPreview(clinic, own, ["cleaning"], deps)).capped).toBe(true);
+  });
   it("ignores businesses of another kind when computing the leader", async () => {
     const deps = fakeDeps({ places: { searchText: vi.fn(async () => [peer("p_a", 4.8, 310), { ...peer("p_diag", 4.9, 2378), types: ["diagnostic_center", "health"] }]) } });
     const { stats } = await marketPreview(clinic, own, ["cleaning"], deps);
@@ -98,6 +112,9 @@ describe("runQuickScan", () => {
     expect(scan.place.placeId).toBe("p_own");
     expect(scan.hints.map((h) => h.kind)).toContain("review_gap");
     expect(scan.competitorCountsPerService.length).toBeGreaterThan(0);
+    expect(scan.nearby.length).toBeGreaterThan(0);
+    expect(scan.radiusKm).toBe(5);
+    expect(scan.nearbyCapped).toBe(false);
   });
   it("still returns a scan when the market preview fails", async () => {
     const deps = fakeDeps();
@@ -110,6 +127,7 @@ describe("runQuickScan", () => {
     const scan = await runQuickScan(clinic, deps, { onPhase: async (_p, fn) => fn() });
     expect(calls).toBeGreaterThan(0);
     expect(scan.competitorCountsPerService).toEqual([]);
+    expect(scan.nearby).toEqual([]);
     expect(scan.hints).toEqual([]);
   });
 });

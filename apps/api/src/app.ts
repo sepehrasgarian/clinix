@@ -9,6 +9,7 @@ import { analysesRoutes } from "./routes/analyses.js";
 import { chatRoutes } from "./routes/chat.js";
 import { clinics } from "./routes/clinics.js";
 import { health } from "./routes/health.js";
+import { logoRoutes } from "./routes/logo.js";
 import { lookupRoutes, photoRoutes } from "./routes/lookup.js";
 
 export type AppOptions = {
@@ -28,6 +29,7 @@ export function createApp({ deps, clerkSecretKey, run }: AppOptions) {
   });
   app.route("/health", health);
   app.route("/api/photo", photoRoutes(deps));
+  app.route("/api/logo", logoRoutes(deps));
 
   const api = new Hono<{ Variables: AuthVariables }>();
   api.use("*", requireUser(clerkSecretKey));

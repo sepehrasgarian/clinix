@@ -22,7 +22,20 @@ describe("GET /api/lookup/market-card", () => {
   it("counts same-discipline peers within 5 km and names the leader", async () => {
     const res = await app.request("/api/lookup/market-card?placeId=p_own&disciplines=dentistry", { headers: guest });
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ nearby: 2, leaderName: "a", leaderReviewCount: 1026, averageRating: 4.7 });
+    expect(await res.json()).toEqual({ nearby: 2, radiusKm: 5, leaderName: "a", leaderReviewCount: 1026, averageRating: 4.7, yourReviews: 74, rank: 3, total: 3, reviewGap: 13.9 });
+  });
+  it("says how far it looked, and who is ahead on reviews when the clinic leads", async () => {
+    const leader: Place = { ...own, placeId: "p_lead", reviewCount: 5000 };
+    const leading = { places: { details: vi.fn(async () => leader), searchText: vi.fn(async () => [peer("a", 0.01, 1026), peer("b", 0.02, 300)]) }, guides: testGuides(), ai: {} } as unknown as PipelineDeps;
+    const res = await createApp({ deps: leading, run: { quickScan: vi.fn(), discovery: vi.fn(), deep: vi.fn() } }).request("/api/lookup/market-card?placeId=p_lead&disciplines=dentistry", { headers: guest });
+    const card = (await res.json()) as { radiusKm: number; rank: number; total: number; reviewGap?: number };
+    expect(card).toMatchObject({ radiusKm: 5, rank: 1, total: 3 });
+    expect(card.reviewGap).toBeUndefined();
+  });
+  it("answers 404, not a server error, when the provider rejects the listing id", async () => {
+    const broken = { places: { details: vi.fn(async () => { throw new Error("Place details failed with 400"); }), searchText: vi.fn() }, guides: testGuides(), ai: {} } as unknown as PipelineDeps;
+    const res = await createApp({ deps: broken, run: { quickScan: vi.fn(), discovery: vi.fn(), deep: vi.fn() } }).request("/api/lookup/market-card?placeId=stale_id&disciplines=dentistry", { headers: guest });
+    expect(res.status).toBe(404);
   });
   it("serves repeat requests from the cache", async () => {
     const before = (deps.places.details as ReturnType<typeof vi.fn>).mock.calls.length;

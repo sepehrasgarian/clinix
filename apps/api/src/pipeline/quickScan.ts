@@ -1,14 +1,16 @@
-import { DISCIPLINE_LABELS, Understanding, type Clinic, type Place, type ScanResult } from "@clinix/contracts";
+import { DISCIPLINE_LABELS, Understanding, type Clinic, type NearbyClinic, type Place, type ScanResult } from "@clinix/contracts";
 import { classifyBusiness } from "../clients/places.js";
 import { distanceKm } from "../lib/geo.js";
 import { matchesDisciplines } from "../lib/disciplineTypes.js";
-import { buildScanHints, isNewClinic, type MarketStats } from "../lib/hints.js";
+import { buildScanHints, isNewClinic, medianStats, type MarketStats } from "../lib/hints.js";
 import { understandExtractPrompt, understandQuestion, understandSystem } from "../prompts/understand.js";
 import type { PipelineDeps } from "./deps.js";
 
 const MAX_LISTING_DISTANCE_KM = 50;
 const MARKET_RADIUS_M = 5000;
 const MARKET_RADIUS_KM = 5.5;
+const SEARCH_PAGE = 20;
+const MAX_NEARBY = 40;
 
 /** Phase 1: the inputs we cannot proceed without. */
 export function validate(clinic: Clinic): void {
@@ -65,7 +67,7 @@ export async function marketPreview(clinic: Clinic, place: Place, services: stri
   const seen = new Map<string, Place>();
 
   const results = await Promise.all(
-    services.slice(0, 6).map(async (service) => ({ service, found: await deps.places.searchText(`${service} ${clinic.city}`, { near: center, radiusM: MARKET_RADIUS_M, max: 20 }) })),
+    services.slice(0, 6).map(async (service) => ({ service, found: await deps.places.searchText(`${service} ${clinic.city}`, { near: center, radiusM: MARKET_RADIUS_M, max: SEARCH_PAGE }) })),
   );
   for (const { service, found } of results) {
     const nearby = found.filter(
@@ -76,6 +78,12 @@ export async function marketPreview(clinic: Clinic, place: Place, services: stri
   }
 
   const peers = [...seen.values()];
+  const nearby: NearbyClinic[] = peers
+    .map((p) => ({ placeId: p.placeId, name: p.name, lat: p.lat, lng: p.lng, rating: p.rating, reviewCount: p.reviewCount, distanceKm: Math.round(distanceKm(center, p) * 10) / 10 }))
+    .sort((a, b) => a.distanceKm - b.distanceKm)
+    .slice(0, MAX_NEARBY);
+  // A search that returned its full page may have more behind it, so the count is "at least".
+  const capped = results.some((r) => r.found.length >= SEARCH_PAGE);
   const rated = peers.filter((p) => p.rating !== undefined);
   const leader = peers.filter((p) => p.reviewCount !== undefined).sort((a, b) => (b.reviewCount ?? 0) - (a.reviewCount ?? 0))[0];
   const crowded = [...counts].sort((a, b) => b.count - a.count)[0];
@@ -84,8 +92,9 @@ export async function marketPreview(clinic: Clinic, place: Place, services: stri
     leaderName: leader?.name,
     averageRating: rated.length ? rated.reduce((s, p) => s + (p.rating ?? 0), 0) / rated.length : undefined,
     crowdedService: crowded,
+    ...medianStats(peers),
   };
-  return { counts, stats };
+  return { counts, stats, nearby, capped };
 }
 
 export type PhaseHooks = { onPhase: (phase: "validate" | "enrich" | "understand", fn: () => Promise<void>) => Promise<void> };
@@ -103,7 +112,7 @@ export async function runQuickScan(clinic: Clinic, deps: PipelineDeps, hooks: Ph
     understanding = await understand(clinic, place, deps);
   });
 
-  const { counts, stats } = await marketPreview(clinic, place, understanding.services, deps).catch(() => ({ counts: [], stats: {} as MarketStats }));
+  const { counts, stats, nearby, capped } = await marketPreview(clinic, place, understanding.services, deps).catch(() => ({ counts: [], stats: {} as MarketStats, nearby: [] as NearbyClinic[], capped: false }));
   const hints = buildScanHints(place, stats, { clinicIsNew: isNewClinic(clinic.opened) });
-  return { place, understanding, hints, competitorCountsPerService: counts };
+  return { place, understanding, hints, competitorCountsPerService: counts, nearby, radiusKm: MARKET_RADIUS_M / 1000, nearbyCapped: capped };
 }

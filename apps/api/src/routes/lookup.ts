@@ -13,9 +13,22 @@ const MarketQuery = z.object({
   disciplines: z.string().transform((v) => v.split(",").filter(Boolean)).pipe(z.array(Discipline).min(1).max(4)),
 });
 
-export type MarketCard = { nearby: number; leaderName?: string; leaderReviewCount?: number; averageRating?: number };
+export type MarketCard = {
+  nearby: number;
+  /** How far we looked, in kilometres. */
+  radiusKm: number;
+  leaderName?: string;
+  leaderReviewCount?: number;
+  averageRating?: number;
+  /** The clinic's own review count, its place by review count among the clinics counted (itself included), and how many times the leader's reviews exceed its own. */
+  yourReviews?: number;
+  rank?: number;
+  total?: number;
+  reviewGap?: number;
+};
 
 const MARKET_RADIUS_M = 5000;
+const round1 = (n: number) => Math.round(n * 10) / 10;
 const MARKET_RADIUS_KM = 5.5;
 const CACHE_TTL_MS = 24 * 3600 * 1000;
 const marketCache = new Map<string, { at: number; card: MarketCard }>();
@@ -26,7 +39,8 @@ export async function buildMarketCard(deps: PipelineDeps, placeId: string, disci
   const hit = marketCache.get(key);
   if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.card;
 
-  const place = await deps.places.details(placeId);
+  // A listing the provider rejects (a stale or malformed id) is "not found", not a server error.
+  const place = await deps.places.details(placeId).catch(() => null);
   if (!place) return null;
   const center = { lat: place.lat, lng: place.lng };
   const seen = new Map<string, Place>();
@@ -39,11 +53,18 @@ export async function buildMarketCard(deps: PipelineDeps, placeId: string, disci
   const peers = [...seen.values()];
   const rated = peers.filter((p) => p.rating !== undefined);
   const leader = peers.filter((p) => p.reviewCount !== undefined).sort((a, b) => (b.reviewCount ?? 0) - (a.reviewCount ?? 0))[0];
+  const own = place.reviewCount;
+  const leaderReviews = leader?.reviewCount;
   const card: MarketCard = {
     nearby: peers.length,
+    radiusKm: MARKET_RADIUS_M / 1000,
     leaderName: leader?.name,
-    leaderReviewCount: leader?.reviewCount,
-    averageRating: rated.length ? Math.round((rated.reduce((s, p) => s + (p.rating ?? 0), 0) / rated.length) * 10) / 10 : undefined,
+    leaderReviewCount: leaderReviews,
+    averageRating: rated.length ? round1(rated.reduce((s, p) => s + (p.rating ?? 0), 0) / rated.length) : undefined,
+    yourReviews: own,
+    rank: own === undefined ? undefined : 1 + peers.filter((p) => (p.reviewCount ?? 0) > own).length,
+    total: own === undefined ? undefined : peers.length + 1,
+    reviewGap: own && leaderReviews && leaderReviews > own ? round1(leaderReviews / own) : undefined,
   };
   marketCache.set(key, { at: Date.now(), card });
   return card;

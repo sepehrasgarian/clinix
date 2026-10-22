@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "../../src/app.js";
+import { updateClinic } from "../../src/db/clinics.js";
 import { resetDbForTests } from "../../src/db/connection.js";
 import { getAnalysis, saveDiscovery, saveScan, transition } from "../../src/db/analyses.js";
 import type { PipelineDeps } from "../../src/pipeline/deps.js";
@@ -8,7 +9,7 @@ import { fixtureAnalysis } from "@clinix/contracts/fixtures";
 import type { Place } from "@clinix/contracts";
 
 const extraPlace: Place = { placeId: "p_added", name: "Added Dental", address: "1 Yonge St", lat: 43.79, lng: -79.41, rating: 4.4, reviewCount: 50, types: ["dentist"], sampleReviews: [] };
-const deps = { places: { searchText: vi.fn(async () => [extraPlace]) }, ai: {} } as unknown as PipelineDeps;
+const deps = { places: { searchText: vi.fn(async () => [extraPlace]), details: vi.fn(async (id: string) => (id === "p_added" ? extraPlace : null)) }, ai: {} } as unknown as PipelineDeps;
 const run = { quickScan: vi.fn(async () => {}), discovery: vi.fn(async () => {}), deep: vi.fn(async () => {}) };
 const app = createApp({ deps, run });
 const auth = { "x-user-id": "user_1", "content-type": "application/json" };
@@ -41,6 +42,16 @@ describe("API routes", () => {
     expect(list).toHaveLength(1);
     const other = await app.request(`/api/clinics/${created.id}`, { headers: { "x-user-id": "user_2" } });
     expect(other.status).toBe(404);
+  });
+
+  it("stores the clinic's Instagram handle and refuses a link that is not a handle", async () => {
+    const ok = await app.request("/api/clinics", { method: "POST", headers: auth, body: JSON.stringify({ ...clinicBody, instagram: "finch.east" }) });
+    expect(ok.status).toBe(201);
+    const { id } = (await ok.json()) as { id: string };
+    const read = (await (await app.request(`/api/clinics/${id}`, { headers: auth })).json()) as { clinic: { instagram?: string } };
+    expect(read.clinic.instagram).toBe("finch.east");
+    const bad = await app.request("/api/clinics", { method: "POST", headers: auth, body: JSON.stringify({ ...clinicBody, instagram: "https://instagram.com/p/abc" }) });
+    expect(bad.status).toBe(400);
   });
 
   it("rejects an invalid clinic body", async () => {
@@ -126,6 +137,39 @@ describe("API routes", () => {
     expect(body.candidates[0]).toMatchObject({ place: { placeId: "p_added" }, flag: "strong" });
     const again = await app.request(`/api/clinics/${clinic.id}/analyses/${a.id}/competitors/add`, { method: "POST", headers: auth, body: JSON.stringify({ query: "Added Dental" }) });
     expect(again.status).toBe(200);
+  });
+
+  it("adds a competitor the owner picked from the lookup, and never the owner's own clinic", async () => {
+    const { clinic, a } = await awaitingCompetitors();
+    const add = (body: object) => app.request(`/api/clinics/${clinic.id}/analyses/${a.id}/competitors/add`, { method: "POST", headers: auth, body: JSON.stringify(body) });
+    expect((await add({ placeId: "p_added" })).status).toBe(201);
+    expect((await add({ placeId: "p_added" })).status).toBe(200);
+    expect((await add({ placeId: "p_unknown_xx" })).status).toBe(404);
+    expect((await add({})).status).toBe(400);
+    await updateClinic(clinic.id, { placeId: "p_added" });
+    const own = await add({ query: "Added Dental" });
+    expect(own.status).toBe(422);
+  });
+
+  it("setting up the same clinic twice updates it instead of adding a duplicate", async () => {
+    const first = await makeClinic();
+    const again = await app.request("/api/clinics", { method: "POST", headers: auth, body: JSON.stringify({ ...clinicBody, name: " finch east family dental ", phone: "416-555-0100" }) });
+    expect(again.status).toBe(200);
+    expect(((await again.json()) as { id: string; phone: string })).toMatchObject({ id: first.id, phone: "416-555-0100" });
+    const other = await app.request("/api/clinics", { method: "POST", headers: auth, body: JSON.stringify({ ...clinicBody, address: "1 Other St" }) });
+    expect(other.status).toBe(201);
+    const list = (await (await app.request("/api/clinics", { headers: auth })).json()) as unknown[];
+    expect(list).toHaveLength(2);
+  });
+
+  it("lets the owner change a clinic's details, and nobody else", async () => {
+    const clinic = await makeClinic();
+    const patch = (id: string, headers: Record<string, string>, body: object) => app.request(`/api/clinics/${id}`, { method: "PATCH", headers, body: JSON.stringify(body) });
+    const ok = await patch(clinic.id, auth, { ...clinicBody, address: "99 New Rd" });
+    expect(ok.status).toBe(200);
+    expect(await ok.json()).toMatchObject({ id: clinic.id, address: "99 New Rd" });
+    expect((await patch(clinic.id, auth, { name: "" })).status).toBe(400);
+    expect((await patch(clinic.id, { ...auth, "x-user-id": "user_2" }, clinicBody)).status).toBe(404);
   });
 
   it("hides another owner's analysis", async () => {

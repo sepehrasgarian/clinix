@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { ClinicInput } from "@clinix/contracts";
-import { createClinic, getClinic, getClinicById, listClinics, transferClinic } from "../db/clinics.js";
+import { createClinic, findClinic, getClinic, getClinicById, listClinics, transferClinic, updateClinic } from "../db/clinics.js";
 import { listAnalyses } from "../db/analyses.js";
 import { GUEST_ID, type AuthVariables } from "../middleware/auth.js";
 
@@ -12,8 +12,19 @@ export const clinics = new Hono<{ Variables: AuthVariables }>()
   .post("/", async (c) => {
     const parsed = ClinicInput.safeParse(await c.req.json().catch(() => null));
     if (!parsed.success) return c.json({ error: "invalid clinic", issues: parsed.error.issues }, 400);
+    // Setting up the same clinic again (going back and saving, or a second visit) updates it instead of adding a duplicate.
+    const existing = await findClinic(c.get("userId"), parsed.data.name, parsed.data.address);
+    if (existing) return c.json(await updateClinic(existing.id, parsed.data), 200);
     const clinic = await createClinic(parsed.data, c.get("userId"), c.get("orgId"));
     return c.json(clinic, 201);
+  })
+  // The owner changed their answers on the first step: the same clinic, new details.
+  .patch("/:id", async (c) => {
+    const clinic = await getClinic(c.req.param("id"), c.get("userId"));
+    if (!clinic) return c.json({ error: "not found" }, 404);
+    const parsed = ClinicInput.safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) return c.json({ error: "invalid clinic", issues: parsed.error.issues }, 400);
+    return c.json(await updateClinic(clinic.id, parsed.data));
   })
   .get("/:id", async (c) => {
     const clinic = await getClinic(c.req.param("id"), c.get("userId"));
