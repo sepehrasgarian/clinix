@@ -1,18 +1,18 @@
 import { verifyToken } from "@clerk/backend";
 import type { Context, Next } from "hono";
-import { env } from "../env.js";
-
 export type AuthVariables = { userId: string; orgId?: string; isGuest: boolean };
 
 /** Browsers mint one of these before any account exists; the free first look runs under it. */
 export const GUEST_ID = /^guest_[a-z0-9]{12,40}$/;
 
 /**
- * Identifies the caller. In order: a Clerk bearer token (when CLERK_SECRET_KEY is set), the
+ * Identifies the caller. In order: a Clerk bearer token (when a secret key is given), the
  * dev `x-user-id` header (when it is not), or a guest id from `x-guest-id`. Guests can run
  * the free first look only; routes that need an account check `isGuest`.
+ * The key is always passed explicitly (index.ts passes the configured one; tests pass none),
+ * so a key in .env can never switch Clerk on for a caller that wants development mode.
  */
-export function requireUser(secretKey: string | undefined = env.CLERK_SECRET_KEY) {
+export function requireUser(secretKey: string | undefined) {
   return async (c: Context<{ Variables: AuthVariables }>, next: Next) => {
     const guest = c.req.header("x-guest-id");
     const header = c.req.header("authorization");
