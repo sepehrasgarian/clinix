@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { Discipline, Id, IsoDate } from "./common";
+import { INSTAGRAM_HANDLE } from "./social";
 
 export const ClinicInput = z.object({
   name: z.string().min(1),
@@ -10,6 +11,8 @@ export const ClinicInput = z.object({
   country: z.string().max(60).optional(),
   website: z.string().url().optional(),
   phone: z.string().optional(),
+  /** The Instagram handle, without the @. */
+  instagram: z.string().regex(INSTAGRAM_HANDLE).optional(),
   disciplines: z.array(Discipline).min(1).max(4),
   services: z.array(z.string()).default([]),
   opened: z.string().regex(/^\d{4}(-\d{2})?$/).optional(),

@@ -373,15 +373,18 @@ export const fixtureAnalysis: Analysis = {
       trustSignals: ["Serving Finch East since 2019"],
     },
     hints: [
-      { kind: "review_gap", text: "The leading clinic within 2 km has 310 reviews; you have 128." },
-      { kind: "rating_strength", text: "Your 4.6 rating is above the local average of 4.5." },
-      { kind: "crowded_market", text: "11 dental clinics within 5 km offer Invisalign." },
+      { kind: "review_gap", text: "You have 128 Google reviews. The 6 clinics nearest you have a median of 310.", why: "Patients compare review counts before they book, and Google uses them when it ranks clinics in Maps." },
+      { kind: "rating_strength", text: "Your 4.6\u2605 rating matches or beats at least half of the 6 clinics nearest you.", why: "That's an advantage worth putting in front of new patients." },
+      { kind: "crowded_market", text: "11 clinics within 5 km are after the same patients.", why: "Your report shows what each of them does better or worse than you." },
     ],
     competitorCountsPerService: [
       { service: "cleaning", count: 14 },
       { service: "Invisalign", count: 11 },
       { service: "emergency dentistry", count: 5 },
     ],
+    nearby: fixtureReport.competitors.map((c, i) => ({ placeId: c.placeId, name: c.name, lat: 43.78 + i * 0.004, lng: -79.41 - i * 0.004, rating: c.rating, reviewCount: c.reviewCount, distanceKm: c.distanceKm })),
+    radiusKm: 5,
+    nearbyCapped: false,
   },
   discovery: {
     selectedPlaceIds: ["place_yonge_smile", "place_willowdale", "place_sheppard", "place_bayview"],

@@ -52,15 +52,35 @@ export type PhaseProgress = z.infer<typeof PhaseProgress>;
 export const ScanHint = z.object({
   kind: z.enum(["review_gap", "rating_gap", "rating_strength", "no_website", "crowded_market"]),
   text: z.string(),
+  /** One line on why it matters. Older scans have none. */
+  why: z.string().optional(),
 });
 export type ScanHint = z.infer<typeof ScanHint>;
 
+
+/** A clinic of the same kind near the owner's, as measured in the quick scan. */
+export const NearbyClinic = z.object({
+  placeId: z.string(),
+  name: z.string(),
+  lat: z.number(),
+  lng: z.number(),
+  rating: z.number().min(0).max(5).optional(),
+  reviewCount: z.number().int().nonnegative().optional(),
+  distanceKm: z.number().nonnegative(),
+});
+export type NearbyClinic = z.infer<typeof NearbyClinic>;
 
 export const ScanResult = z.object({
   place: Place,
   understanding: Understanding,
   hints: z.array(ScanHint),
   competitorCountsPerService: z.array(z.object({ service: z.string(), count: z.number().int() })),
+  /** The nearby clinics found, nearest first. Older scans have none. */
+  nearby: z.array(NearbyClinic).default([]),
+  /** How far the search looked, in km. */
+  radiusKm: z.number().default(5),
+  /** True when the search hit its limit, so the real number is higher ("28+"). */
+  nearbyCapped: z.boolean().default(false),
 });
 export type ScanResult = z.infer<typeof ScanResult>;
 
