@@ -12,7 +12,7 @@ import type { PipelineDeps } from "../pipeline/deps.js";
 export function chatRoutes(deps: PipelineDeps) {
   return new Hono<{ Variables: AuthVariables }>()
     .get("/", async (c) => {
-      const clinic = await getClinic(c.req.param("id")!, c.get("userId"));
+      const clinic = await getClinic(c.req.param("id")!, c.get("userId"), c.get("orgId"));
       if (!clinic) return c.json({ error: "not found" }, 404);
       const [messages, analyses] = await Promise.all([recentMessages(clinic.id, 50), listAnalyses(clinic.id)]);
       const ctx = { reports: analyses.filter((a) => a.status === "succeeded" && a.report) };
@@ -21,7 +21,7 @@ export function chatRoutes(deps: PipelineDeps) {
     })
     .post("/", async (c) => {
       if (c.get("isGuest")) return c.json({ error: "Create a free account to ask questions about your report.", code: "auth_required" }, 401);
-      const clinic = await getClinic(c.req.param("id")!, c.get("userId"));
+      const clinic = await getClinic(c.req.param("id")!, c.get("userId"), c.get("orgId"));
       if (!clinic) return c.json({ error: "not found" }, 404);
       const body = ChatRequest.safeParse(await c.req.json().catch(() => null));
       if (!body.success) return c.json({ error: "message required (1-4000 characters)" }, 400);

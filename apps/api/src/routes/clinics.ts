@@ -8,7 +8,7 @@ import { GUEST_ID, type AuthVariables } from "../middleware/auth.js";
 const ClaimBody = z.object({ guestId: z.string().regex(GUEST_ID) });
 
 export const clinics = new Hono<{ Variables: AuthVariables }>()
-  .get("/", async (c) => c.json(await listClinics(c.get("userId"))))
+  .get("/", async (c) => c.json(await listClinics(c.get("userId"), c.get("orgId"))))
   .post("/", async (c) => {
     const parsed = ClinicInput.safeParse(await c.req.json().catch(() => null));
     if (!parsed.success) return c.json({ error: "invalid clinic", issues: parsed.error.issues }, 400);
@@ -27,7 +27,7 @@ export const clinics = new Hono<{ Variables: AuthVariables }>()
     return c.json(await updateClinic(clinic.id, parsed.data));
   })
   .get("/:id", async (c) => {
-    const clinic = await getClinic(c.req.param("id"), c.get("userId"));
+    const clinic = await getClinic(c.req.param("id"), c.get("userId"), c.get("orgId"));
     if (!clinic) return c.json({ error: "not found" }, 404);
     return c.json({ clinic, analyses: await listAnalyses(clinic.id) });
   })
@@ -39,7 +39,7 @@ export const clinics = new Hono<{ Variables: AuthVariables }>()
     const existing = await getClinicById(c.req.param("id"));
     if (!existing) return c.json({ error: "not found" }, 404);
     if (existing.ownerId === c.get("userId")) return c.json(existing);
-    const moved = await transferClinic(existing.id, body.data.guestId, c.get("userId"));
+    const moved = await transferClinic(existing.id, body.data.guestId, c.get("userId"), c.get("orgId"));
     if (!moved) return c.json({ error: "this clinic belongs to someone else" }, 403);
     return c.json(moved);
   });

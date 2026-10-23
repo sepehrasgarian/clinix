@@ -5,6 +5,7 @@ import clsx from "clsx";
 import { Activity, ArrowLeftRight, Building2, ClipboardList, CreditCard, FileText, Layers, LayoutDashboard, LifeBuoy, MoreVertical, Search, Settings, Sparkles } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import type { Clinic } from "@clinix/contracts";
+import { TeamSwitcher } from "@/components/auth/TeamSwitcher";
 import { useAccount } from "@/components/auth/useAccount";
 import { Logo } from "@/components/ui/Logo";
 import { copy } from "@/lib/copy";
@@ -59,10 +60,13 @@ export function Sidebar({ clinic, clinics = [clinic], site, onOpenChat }: { clin
         <Link href="/onboarding" className={clsx(row, idle)}><Settings {...icon} />Settings</Link>
         <Link href="/pricing" className={clsx(row, idle)}><CreditCard {...icon} />Billing</Link>
         <Link href="/contact" className={clsx(row, idle)}><LifeBuoy {...icon} />Help &amp; support</Link>
-        <div className="mt-3 flex items-center gap-3 border-t border-[#e7eaf2] px-1 pt-4">
-          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#eceefb] text-sm font-semibold text-[#101936]" aria-hidden>{initials(name, email)}</span>
-          <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-[#101936]">{name ?? "Account"}</span>{email && <span className="block truncate text-xs text-muted">{email}</span>}</span>
-          <button type="button" onClick={signOut} aria-label="Sign out" title="Sign out" className="grid size-8 place-items-center rounded-lg text-muted hover:bg-[#f7f8fc]"><MoreVertical {...icon} /></button>
+        <div className="mt-3 flex flex-col gap-3 border-t border-[#e7eaf2] px-1 pt-4">
+          <TeamSwitcher />
+          <div className="flex items-center gap-3">
+            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#eceefb] text-sm font-semibold text-[#101936]" aria-hidden>{initials(name, email)}</span>
+            <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-[#101936]">{name ?? "Account"}</span>{email && <span className="block truncate text-xs text-muted">{email}</span>}</span>
+            <button type="button" onClick={signOut} aria-label="Sign out" title="Sign out" className="grid size-8 place-items-center rounded-lg text-muted hover:bg-[#f7f8fc]"><MoreVertical {...icon} /></button>
+          </div>
         </div>
       </div>
     </aside>

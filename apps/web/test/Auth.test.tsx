@@ -11,6 +11,7 @@ const load = async (clerk: boolean, auth: { isLoaded: boolean; isSignedIn: boole
   vi.doMock("@clerk/nextjs", () => ({
     useAuth: () => auth,
     UserButton: () => <button type="button">User menu</button>,
+    OrganizationSwitcher: () => <button type="button">Team switcher</button>,
     SignIn: () => <div>Clerk sign-in form</div>,
     SignUp: () => <div>Clerk sign-up form</div>,
     ClerkProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
@@ -19,6 +20,7 @@ const load = async (clerk: boolean, auth: { isLoaded: boolean; isSignedIn: boole
     identity: await import("@/lib/identity"),
     authLib: await import("@/lib/auth"),
     AccountMenu: (await import("@/components/auth/AccountMenu")).AccountMenu,
+    TeamSwitcher: (await import("@/components/auth/TeamSwitcher")).TeamSwitcher,
     AuthPanel: (await import("@/components/auth/AuthPanel")).AuthPanel,
     useSignedIn: (await import("@/components/auth/useSignedIn")).useSignedIn,
   };
@@ -63,6 +65,16 @@ describe("AccountMenu and AuthPanel", () => {
     expect(screen.getByRole("button", { name: "User menu" })).toBeInTheDocument();
     render(<AuthPanel mode="sign-up" />);
     expect(screen.getByText("Clerk sign-up form")).toBeInTheDocument();
+  });
+
+  it("offers the team switcher only to a signed-in person on Clerk", async () => {
+    const clerk = await load(true);
+    render(<clerk.TeamSwitcher />);
+    expect(screen.getByRole("button", { name: "Team switcher" })).toBeInTheDocument();
+    const signedOut = await load(true, { isLoaded: true, isSignedIn: false });
+    expect(render(<signedOut.TeamSwitcher />).container).toBeEmptyDOMElement();
+    const dev = await load(false);
+    expect(render(<dev.TeamSwitcher />).container).toBeEmptyDOMElement();
   });
 
   it("shows nothing for a signed-out visitor", async () => {

@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { CompetitorCandidate } from "@clinix/contracts";
 import { getClinic, updateClinic } from "../db/clinics.js";
 import { createAnalysis, createAnalysisFromScan, findRecommendation, getAnalysis, listAnalyses, reusableScan, saveDiscovery, setRecommendationStatus, transition } from "../db/analyses.js";
+import { canManage, OWNER_ONLY } from "../middleware/access.js";
 import type { AuthVariables } from "../middleware/auth.js";
 import type { PipelineDeps } from "../pipeline/deps.js";
 import { validateSelection } from "../pipeline/discover.js";
@@ -19,13 +20,14 @@ const StatusBody = z.object({ status: z.enum(["todo", "in_progress", "done"]) })
 export function analysesRoutes(deps: PipelineDeps, run: StageRunners = stageRunners) {
   return new Hono<{ Variables: AuthVariables }>()
     .get("/", async (c) => {
-      const clinic = await getClinic(c.req.param("id")!, c.get("userId"));
+      const clinic = await getClinic(c.req.param("id")!, c.get("userId"), c.get("orgId"));
       if (!clinic) return c.json({ error: "not found" }, 404);
       return c.json(await listAnalyses(clinic.id));
     })
     .post("/", async (c) => {
-      const clinic = await getClinic(c.req.param("id")!, c.get("userId"));
+      const clinic = await getClinic(c.req.param("id")!, c.get("userId"), c.get("orgId"));
       if (!clinic) return c.json({ error: "not found" }, 404);
+      if (!canManage(c.var, clinic)) return c.json(OWNER_ONLY, 403);
       const inFlight = (await listAnalyses(clinic.id)).find((a) => a.status === "queued" || a.status === "running");
       if (inFlight) return c.json(inFlight, 200);
       const previous = await reusableScan(clinic.id);
@@ -35,7 +37,7 @@ export function analysesRoutes(deps: PipelineDeps, run: StageRunners = stageRunn
       return c.json(analysis, 202);
     })
     .get("/:aid", async (c) => {
-      const clinic = await getClinic(c.req.param("id")!, c.get("userId"));
+      const clinic = await getClinic(c.req.param("id")!, c.get("userId"), c.get("orgId"));
       if (!clinic) return c.json({ error: "not found" }, 404);
       let analysis = await getAnalysis(c.req.param("aid"));
       if (!analysis || analysis.clinicId !== clinic.id) return c.json({ error: "not found" }, 404);
@@ -44,8 +46,9 @@ export function analysesRoutes(deps: PipelineDeps, run: StageRunners = stageRunn
     })
     // Checkpoint 1: the owner confirms the services found by the quick scan.
     .post("/:aid/services", async (c) => {
-      const clinic = await getClinic(c.req.param("id")!, c.get("userId"));
+      const clinic = await getClinic(c.req.param("id")!, c.get("userId"), c.get("orgId"));
       if (!clinic) return c.json({ error: "not found" }, 404);
+      if (!canManage(c.var, clinic)) return c.json(OWNER_ONLY, 403);
       const analysis = await getAnalysis(c.req.param("aid"));
       if (!analysis || analysis.clinicId !== clinic.id) return c.json({ error: "not found" }, 404);
       const body = ServicesBody.safeParse(await c.req.json().catch(() => null));
@@ -62,8 +65,9 @@ export function analysesRoutes(deps: PipelineDeps, run: StageRunners = stageRunn
     // Checkpoint 2: the owner confirms up to five competitors per discipline. Needs an account.
     .post("/:aid/competitors", async (c) => {
       if (c.get("isGuest")) return c.json({ error: "Create a free account to choose competitors and run the full analysis.", code: "auth_required" }, 401);
-      const clinic = await getClinic(c.req.param("id")!, c.get("userId"));
+      const clinic = await getClinic(c.req.param("id")!, c.get("userId"), c.get("orgId"));
       if (!clinic) return c.json({ error: "not found" }, 404);
+      if (!canManage(c.var, clinic)) return c.json(OWNER_ONLY, 403);
       const analysis = await getAnalysis(c.req.param("aid"));
       if (!analysis || analysis.clinicId !== clinic.id) return c.json({ error: "not found" }, 404);
       if (analysis.status !== "awaiting_competitors" || !analysis.discovery) return c.json({ error: `analysis is ${analysis.status}, not awaiting_competitors` }, 409);
@@ -79,8 +83,9 @@ export function analysesRoutes(deps: PipelineDeps, run: StageRunners = stageRunn
     })
     // The owner adds a competitor we missed, picked from the lookup or by name. It joins the candidate list as "strong".
     .post("/:aid/competitors/add", async (c) => {
-      const clinic = await getClinic(c.req.param("id")!, c.get("userId"));
+      const clinic = await getClinic(c.req.param("id")!, c.get("userId"), c.get("orgId"));
       if (!clinic) return c.json({ error: "not found" }, 404);
+      if (!canManage(c.var, clinic)) return c.json(OWNER_ONLY, 403);
       const analysis = await getAnalysis(c.req.param("aid"));
       if (!analysis || analysis.clinicId !== clinic.id) return c.json({ error: "not found" }, 404);
       if (analysis.status !== "awaiting_competitors" || !analysis.discovery) return c.json({ error: "analysis is not awaiting competitors" }, 409);
@@ -101,8 +106,9 @@ export function analysesRoutes(deps: PipelineDeps, run: StageRunners = stageRunn
     })
     // Retry whichever stage failed; the stage's inputs (scan, selection) are kept.
     .post("/:aid/retry", async (c) => {
-      const clinic = await getClinic(c.req.param("id")!, c.get("userId"));
+      const clinic = await getClinic(c.req.param("id")!, c.get("userId"), c.get("orgId"));
       if (!clinic) return c.json({ error: "not found" }, 404);
+      if (!canManage(c.var, clinic)) return c.json(OWNER_ONLY, 403);
       const analysis = await getAnalysis(c.req.param("aid"));
       if (!analysis || analysis.clinicId !== clinic.id) return c.json({ error: "not found" }, 404);
       if (analysis.status !== "failed") return c.json({ error: "only a failed analysis can be retried" }, 409);
@@ -114,7 +120,7 @@ export function analysesRoutes(deps: PipelineDeps, run: StageRunners = stageRunn
     })
     // The owner (or front desk) tracks an action: to do -> in progress -> done.
     .patch("/:aid/recommendations/:rid", async (c) => {
-      const clinic = await getClinic(c.req.param("id")!, c.get("userId"));
+      const clinic = await getClinic(c.req.param("id")!, c.get("userId"), c.get("orgId"));
       if (!clinic) return c.json({ error: "not found" }, 404);
       const analysis = await getAnalysis(c.req.param("aid"));
       if (!analysis || analysis.clinicId !== clinic.id) return c.json({ error: "not found" }, 404);

@@ -1,6 +1,16 @@
 import { verifyToken } from "@clerk/backend";
 import type { Context, Next } from "hono";
-export type AuthVariables = { userId: string; orgId?: string; isGuest: boolean };
+export type OrgRole = "admin" | "member";
+export type AuthVariables = { userId: string; orgId?: string; orgRole?: OrgRole; isGuest: boolean };
+
+/** Clerk puts the active organization in `o` (v2 tokens) or `org_id` / `org_role` (v1). */
+export function orgFromClaims(claims: Record<string, unknown>): { orgId?: string; orgRole?: OrgRole } {
+  const v2 = claims.o as { id?: string; rol?: string } | undefined;
+  const orgId = v2?.id ?? (claims.org_id as string | undefined);
+  const raw = v2?.rol ?? (claims.org_role as string | undefined);
+  const orgRole = raw ? (raw.replace(/^org:/, "") === "admin" ? "admin" : "member") : undefined;
+  return orgId ? { orgId, orgRole } : {};
+}
 
 /** Browsers mint one of these before any account exists; the free first look runs under it. */
 export const GUEST_ID = /^guest_[a-z0-9]{12,40}$/;
@@ -24,7 +34,10 @@ export function requireUser(secretKey: string | undefined) {
         c.set("userId", devUser);
         c.set("isGuest", false);
         const org = c.req.header("x-org-id");
-        if (org) c.set("orgId", org);
+        if (org) {
+          c.set("orgId", org);
+          c.set("orgRole", c.req.header("x-org-role") === "member" ? "member" : "admin");
+        }
         return next();
       }
     }
@@ -40,8 +53,9 @@ export function requireUser(secretKey: string | undefined) {
       const claims = await verifyToken(token, { secretKey });
       c.set("userId", claims.sub);
       c.set("isGuest", false);
-      const orgId = (claims as { org_id?: string }).org_id;
+      const { orgId, orgRole } = orgFromClaims(claims as unknown as Record<string, unknown>);
       if (orgId) c.set("orgId", orgId);
+      if (orgRole) c.set("orgRole", orgRole);
       return next();
     } catch {
       return c.json({ error: "invalid token" }, 401);

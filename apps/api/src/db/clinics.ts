@@ -10,10 +10,12 @@ export async function createClinic(input: ClinicInput, ownerId: string, orgId?: 
   return Clinic.parse(toPlain(row));
 }
 
-/** Owner-scoped read used by routes. */
-export async function getClinic(id: string, ownerId: string): Promise<Clinic | null> {
+/** Read used by routes: the owner, or anyone in the clinic's organization. */
+export async function getClinic(id: string, userId: string, orgId?: string): Promise<Clinic | null> {
   const clinic = await getClinicById(id);
-  return clinic && clinic.ownerId === ownerId ? clinic : null;
+  if (!clinic) return null;
+  const member = !!orgId && clinic.orgId === orgId;
+  return clinic.ownerId === userId || member ? clinic : null;
 }
 
 /** Trusted read for the job runner; ownership was checked when the job was created. */
@@ -23,9 +25,12 @@ export async function getClinicById(id: string): Promise<Clinic | null> {
   return row ? Clinic.parse(toPlain(row)) : null;
 }
 
-export async function listClinics(ownerId: string): Promise<Clinic[]> {
+/** The clinics a person can open: their own, plus their organization's when one is active. */
+export async function listClinics(userId: string, orgId?: string): Promise<Clinic[]> {
   const db = await getDb();
-  const [rows] = await db.query<[unknown[]]>("SELECT * FROM clinic WHERE ownerId = $ownerId ORDER BY createdAt DESC", { ownerId });
+  const [rows] = orgId
+    ? await db.query<[unknown[]]>("SELECT * FROM clinic WHERE ownerId = $userId OR orgId = $orgId ORDER BY createdAt DESC", { userId, orgId })
+    : await db.query<[unknown[]]>("SELECT * FROM clinic WHERE ownerId = $userId ORDER BY createdAt DESC", { userId });
   return rows.map((r) => Clinic.parse(toPlain(r)));
 }
 
@@ -35,14 +40,13 @@ export async function updateClinic(id: string, patch: Partial<ClinicInput> & { p
   return Clinic.parse(toPlain(row));
 }
 
-/** Moves a guest's clinic to a signed-in owner. Compare-and-set on the current owner. */
-export async function transferClinic(id: string, fromOwnerId: string, toOwnerId: string): Promise<Clinic | null> {
+/** Moves a guest's clinic to a signed-in owner, and into their active organization. Compare-and-set on the current owner. */
+export async function transferClinic(id: string, fromOwnerId: string, toOwnerId: string, orgId?: string): Promise<Clinic | null> {
   const db = await getDb();
-  const [rows] = await db.query<[unknown[]]>("UPDATE $id SET ownerId = $to WHERE ownerId = $from RETURN AFTER", {
-    id: rid("clinic", id),
-    from: fromOwnerId,
-    to: toOwnerId,
-  });
+  const params = { id: rid("clinic", id), from: fromOwnerId, to: toOwnerId, org: orgId };
+  const [rows] = orgId
+    ? await db.query<[unknown[]]>("UPDATE $id SET ownerId = $to, orgId = $org WHERE ownerId = $from RETURN AFTER", params)
+    : await db.query<[unknown[]]>("UPDATE $id SET ownerId = $to WHERE ownerId = $from RETURN AFTER", params);
   return rows.length ? Clinic.parse(toPlain(rows[0])) : null;
 }
 

@@ -6,13 +6,16 @@ const build = (secret?: string) => {
   const app = new Hono<{ Variables: AuthVariables }>();
   app.use("*", requireUser(secret));
   app.get("/me", (c) => c.json({ userId: c.get("userId"), orgId: c.get("orgId") ?? null, isGuest: c.get("isGuest") }));
+  app.get("/role", (c) => c.json({ orgRole: c.get("orgRole") ?? null }));
   return app;
 };
 
 describe("requireUser", () => {
-  it("dev mode: accepts x-user-id and optional x-org-id as a full user", async () => {
+  it("dev mode: accepts x-user-id and optional x-org-id as a full user, administrator unless x-org-role says member", async () => {
     const res = await build(undefined).request("/me", { headers: { "x-user-id": "u1", "x-org-id": "org1" } });
     expect(await res.json()).toEqual({ userId: "u1", orgId: "org1", isGuest: false });
+    const member = await build(undefined).request("/role", { headers: { "x-user-id": "u1", "x-org-id": "org1", "x-org-role": "member" } });
+    expect(await member.json()).toEqual({ orgRole: "member" });
   });
   it("accepts a well-formed guest id in any mode and marks it as a guest", async () => {
     for (const secret of [undefined, "test-secret-key"]) {

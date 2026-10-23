@@ -12,7 +12,9 @@ export function AccountMenu({ afterSignOut = "/", label = "Sign out" }: { afterS
   const router = useRouter();
   const signedIn = useSignedIn();
   if (!signedIn) return null;
-  if (clerkEnabled) return <UserButton />;
+  if (clerkEnabled) {
+    return <UserButton />;
+  }
   return (
     <button type="button" onClick={() => { clearDevUser(); router.push(afterSignOut); }} className="inline-flex min-h-9 items-center gap-1.5 text-sm font-medium text-muted hover:text-ink">
       <LogOut size={14} aria-hidden /> {label}
