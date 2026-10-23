@@ -11,6 +11,7 @@ SECRET_PATTERN='(sk-ant-[A-Za-z0-9_-]{8,}|AIza[0-9A-Za-z_-]{30,}|apify_api_[A-Za
 status=0
 while IFS= read -r path; do
   [ -z "$path" ] && continue
+  [ "$path" = ".env.example" ] && continue # the one env file that is meant to be public
   if [[ "$path" =~ $PRIVATE_PATHS ]]; then
     echo "pre-commit: '$path' is private and must not be committed. Unstage it: git restore --staged -- '$path'"
     status=1
