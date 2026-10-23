@@ -1,26 +1,33 @@
 "use client";
 
-import clsx from "clsx";
-import { Activity, ArrowLeftRight, Building2, ChevronsUpDown, ClipboardList, FileText, Layers, LayoutDashboard, MessageSquareText, Plus, Search } from "lucide-react";
 import Link from "next/link";
+import clsx from "clsx";
+import { Activity, ArrowLeftRight, Building2, ClipboardList, CreditCard, FileText, Layers, LayoutDashboard, LifeBuoy, MoreVertical, Search, Settings, Sparkles } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import type { Clinic } from "@clinix/contracts";
-import { AccountMenu } from "@/components/auth/AccountMenu";
+import { useAccount } from "@/components/auth/useAccount";
 import { Logo } from "@/components/ui/Logo";
 import { copy } from "@/lib/copy";
+import { initials } from "@/lib/initials";
+import { LocationSwitcher } from "./LocationSwitcher";
 
-/** Left navigation for one clinic. With several clinics, a switcher keeps the same screen and swaps the clinic. */
-export function Sidebar({ clinic, clinics = [clinic], onOpenChat }: { clinic: Clinic; clinics?: Clinic[]; onOpenChat: () => void }) {
+const icon = { size: 18, strokeWidth: 1.5, "aria-hidden": true } as const;
+const row = "relative flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium";
+const idle = "text-ink-grey hover:bg-[#f7f8fc] hover:text-ink";
+
+/** Left navigation for one clinic once it has a report. The clinic switcher keeps the same screen and swaps the clinic. */
+export function Sidebar({ clinic, clinics = [clinic], site, onOpenChat }: { clinic: Clinic; clinics?: Clinic[]; site?: string | null; onOpenChat: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { email, name, signOut } = useAccount();
   const base = `/app/clinics/${clinic.id}`;
   const items: { href: string; label: string; icon: typeof Activity; exact?: boolean }[] = [
     { href: base, label: copy.nav.dashboard, icon: LayoutDashboard, exact: true },
+    { href: `${base}/competitors`, label: copy.nav.competitors, icon: Search },
     { href: `${base}/report`, label: copy.nav.report, icon: FileText },
-    { href: `${base}/findings`, label: copy.nav.findings, icon: Search },
+    { href: `${base}/findings`, label: copy.nav.findings, icon: Building2 },
     { href: `${base}/disciplines`, label: copy.nav.disciplines, icon: Layers },
     { href: `${base}/actions`, label: copy.nav.actions, icon: ClipboardList },
-    { href: `${base}/competitors`, label: copy.nav.competitors, icon: Building2 },
     { href: `${base}/compare`, label: copy.nav.compare, icon: ArrowLeftRight },
   ];
   // While an analysis is open, it is the current place in the app: one extra entry, highlighted, that goes nowhere new.
@@ -30,47 +37,34 @@ export function Sidebar({ clinic, clinics = [clinic], onOpenChat }: { clinic: Cl
     router.push(`/app/clinics/${id}${rest.startsWith("/run") ? "" : rest}`);
   };
   return (
-    <aside className="flex w-full flex-col gap-6 border-b border-[#eceef5] bg-gradient-to-b from-[#fbfbff] to-[#f4f5fc] p-4 md:sticky md:top-0 md:h-screen md:w-[248px] md:shrink-0 md:overflow-y-auto md:border-r md:border-b-0 md:px-5 md:py-7">
-      <Logo surface="light" height={22} href={base} className="px-1" />
-      <div className="rounded-2xl bg-white px-3.5 py-3 shadow-[0_14px_34px_-24px_rgba(76,70,180,.45)] ring-1 ring-[#ecedf5]">
-        <label htmlFor="clinic-switcher" className="text-xs text-faint">Clinic</label>
-        {clinics.length > 1 ? (
-          <div className="relative">
-            <select id="clinic-switcher" value={clinic.id} onChange={(e) => switchClinic(e.target.value)} className="min-h-9 w-full appearance-none truncate rounded-md bg-transparent pr-6 font-medium outline-none focus-visible:ring-2 focus-visible:ring-primary">
-              {clinics.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-            <ChevronsUpDown size={14} aria-hidden className="pointer-events-none absolute top-1/2 right-0 -translate-y-1/2 text-faint" />
-          </div>
-        ) : (
-          <p id="clinic-switcher" className="truncate font-medium">{clinic.name}</p>
-        )}
-        <p className="truncate text-xs text-muted">{clinic.address}, {clinic.city}</p>
-        <Link href="/onboarding" className="mt-2 inline-flex min-h-9 items-center gap-1 text-xs font-medium text-primary">
-          <Plus size={14} aria-hidden /> Add a clinic
-        </Link>
+    <aside className="flex w-full flex-col gap-5 border-b border-[#e7eaf2] bg-white p-4 md:sticky md:top-0 md:h-screen md:w-[256px] md:shrink-0 md:overflow-y-auto md:border-r md:border-b-0 md:px-4 md:py-6">
+      <Logo surface="light" height={28} href={base} className="px-2" />
+      <div>
+        <LocationSwitcher clinic={clinic} clinics={clinics} site={site} onSwitch={switchClinic} />
+        <Link href="/onboarding" className="mt-1 inline-flex min-h-9 items-center gap-1.5 px-3 text-xs font-medium text-primary hover:text-[#4338ca]"><span aria-hidden className="text-base leading-none">+</span>Add a clinic</Link>
       </div>
       <nav aria-label="Main" className="flex flex-row gap-1 overflow-x-auto md:flex-col">
         {items.map(({ href, label, icon: Icon, exact }) => {
           const active = exact ? pathname === href : pathname.startsWith(href);
           return (
-            <Link
-              key={href}
-              href={href}
-              aria-current={active ? "page" : undefined}
-              className={clsx("relative flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium", active ? "bg-[#eeefff] font-semibold text-primary" : "text-ink-grey hover:bg-white hover:text-ink")}
-            >
-              {active && <span aria-hidden className="absolute top-2 bottom-2 -left-5 hidden w-[3px] rounded-r-full bg-primary md:block" />}
-              <Icon aria-hidden size={18} />
-              {label}
+            <Link key={href} href={href} aria-current={active ? "page" : undefined} className={clsx(row, active ? "bg-[#f1f0ff] font-semibold text-primary" : idle)}>
+              {active && <span aria-hidden className="absolute top-2 bottom-2 -left-4 hidden w-[3px] rounded-r-full bg-primary md:block" />}
+              <Icon {...icon} />{label}
             </Link>
           );
         })}
       </nav>
-      <button type="button" onClick={onOpenChat} className="mt-auto flex min-h-11 items-center gap-3 rounded-2xl bg-white px-3.5 text-sm font-medium ring-1 ring-[#ecedf5] hover:ring-primary/30">
-        <MessageSquareText aria-hidden size={18} className="text-primary" />
-        {copy.nav.chat}
-      </button>
-      <div className="flex min-h-9 items-center justify-between px-1 text-sm text-muted"><span>Account</span><AccountMenu /></div>
+      <div className="mt-auto flex flex-col gap-1">
+        <button type="button" onClick={onOpenChat} className="mb-2 flex items-center gap-3 rounded-xl border border-[#e7eaf2] bg-white px-3 py-3 text-left text-sm font-medium text-[#101936] hover:border-primary/40"><Sparkles {...icon} className="text-primary" />{copy.nav.chat}</button>
+        <Link href="/onboarding" className={clsx(row, idle)}><Settings {...icon} />Settings</Link>
+        <Link href="/pricing" className={clsx(row, idle)}><CreditCard {...icon} />Billing</Link>
+        <Link href="/contact" className={clsx(row, idle)}><LifeBuoy {...icon} />Help &amp; support</Link>
+        <div className="mt-3 flex items-center gap-3 border-t border-[#e7eaf2] px-1 pt-4">
+          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#eceefb] text-sm font-semibold text-[#101936]" aria-hidden>{initials(name, email)}</span>
+          <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-[#101936]">{name ?? "Account"}</span>{email && <span className="block truncate text-xs text-muted">{email}</span>}</span>
+          <button type="button" onClick={signOut} aria-label="Sign out" title="Sign out" className="grid size-8 place-items-center rounded-lg text-muted hover:bg-[#f7f8fc]"><MoreVertical {...icon} /></button>
+        </div>
+      </div>
     </aside>
   );
 }

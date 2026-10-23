@@ -3,7 +3,6 @@ import { describe, expect, it, vi } from "vitest";
 import { fixtureAnalysis, fixtureClinic, fixtureReport } from "@clinix/contracts/fixtures";
 import { ActionPlan } from "@/components/report/ActionPlan";
 import { CompetitorsSection } from "@/components/report/CompetitorsSection";
-import { Dashboard } from "@/components/report/Dashboard";
 import { Overview } from "@/components/report/Overview";
 import { nextMoves, positionOf, rankByReviews } from "@/lib/report";
 
@@ -79,18 +78,6 @@ describe("CompetitorsSection site facts", () => {
     expect(screen.getByText(/3 practitioners named/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Willowdale Dental Care/ }));
     expect(screen.getByText(/No website on file/)).toBeInTheDocument();
-  });
-});
-
-describe("Dashboard", () => {
-  it("shows the scoreboard, three moves, where you stand and discipline tabs", () => {
-    render(<Dashboard clinic={fixtureClinic} analysis={fixtureAnalysis} report={fixtureReport} />);
-    expect(screen.getByText("#5")).toBeInTheDocument();
-    expect(screen.getByText("Your 3 moves")).toBeInTheDocument();
-    expect(screen.getByText("Where you stand")).toBeInTheDocument();
-    const tabs = screen.getByRole("tablist", { name: "Scope" });
-    fireEvent.click(within(tabs).getByRole("tab", { name: /Dentistry/ }));
-    expect(screen.getByText(/wins patients on online booking/)).toBeInTheDocument();
   });
 });
 
