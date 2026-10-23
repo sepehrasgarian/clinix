@@ -89,4 +89,29 @@ describe("free first look as a guest, then claim", () => {
     expect(reused.scan).toBeDefined();
     expect(run.quickScan).toHaveBeenCalledTimes(1);
   });
+
+  it("forceRefresh gives the owner a new scan but a guest still gets the copy", async () => {
+    const mine = (await (await app.request("/api/clinics", { method: "POST", headers: user, body: JSON.stringify(clinicBody) })).json()) as { id: string };
+    const first = (await (await app.request(`/api/clinics/${mine.id}/analyses`, { method: "POST", headers: user })).json()) as { id: string };
+    await transition(first.id, "queued", { status: "running" });
+    await saveScan(first.id, fixtureAnalysis.scan!);
+    await transition(first.id, "running", { status: "awaiting_services" });
+    await transition(first.id, "awaiting_services", { status: "failed", error: "x" });
+    run.quickScan.mockClear();
+
+    const fresh = await app.request(`/api/clinics/${mine.id}/analyses`, { method: "POST", headers: user, body: JSON.stringify({ forceRefresh: true }) });
+    expect(fresh.status).toBe(202);
+    expect(run.quickScan).toHaveBeenCalledTimes(1);
+
+    const g = (await (await app.request("/api/clinics", { method: "POST", headers: guest, body: JSON.stringify(clinicBody) })).json()) as { id: string };
+    const theirs = (await (await app.request(`/api/clinics/${g.id}/analyses`, { method: "POST", headers: guest })).json()) as { id: string };
+    await transition(theirs.id, "queued", { status: "running" });
+    await saveScan(theirs.id, fixtureAnalysis.scan!);
+    await transition(theirs.id, "running", { status: "failed", error: "x" });
+    run.quickScan.mockClear();
+    const copy = await app.request(`/api/clinics/${g.id}/analyses`, { method: "POST", headers: guest, body: JSON.stringify({ forceRefresh: true }) });
+    expect(copy.status).toBe(201);
+    expect(((await copy.json()) as { reusedFrom?: string }).reusedFrom).toBe(theirs.id);
+    expect(run.quickScan).not.toHaveBeenCalled();
+  });
 });

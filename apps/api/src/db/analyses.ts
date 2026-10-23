@@ -1,6 +1,7 @@
 import {
   Analysis,
   type AnalysisStage,
+  type Clinic,
   type AnalysisStatus,
   type DiscoveryResult,
   type PhaseId,
@@ -10,6 +11,7 @@ import {
 } from "@clinix/contracts";
 import { getDb } from "./connection.js";
 import { rid, toPlain } from "./records.js";
+import { sameWebsite } from "../lib/hosts.js";
 import { newId, nowIso } from "../lib/ids.js";
 
 const QUICK_SCAN_PHASES: PhaseId[] = ["validate", "enrich", "understand"];
@@ -36,19 +38,31 @@ export async function createAnalysis(clinicId: string): Promise<Analysis> {
   return Analysis.parse(toPlain(row));
 }
 
-/** A finished quick scan from the last `maxAgeDays`, so a repeat visit does not pay for a new one. */
-export async function reusableScan(clinicId: string, maxAgeDays = 30): Promise<ScanResult | null> {
+export type ReusableScan = { scan: ScanResult; reusedFrom: string };
+export type ReuseWindow = { ownDays?: number; anyDays?: number };
+
+/**
+ * A finished quick scan to copy instead of paying for a new one: the clinic's own from the last
+ * `ownDays`, else anyone's scan of the same Google listing from the last `anyDays`, as long as
+ * the listing's website is the clinic's website (so a listing that changed hands is not reused).
+ */
+export async function reusableScan(clinic: Pick<Clinic, "id" | "placeId" | "website">, { ownDays = 30, anyDays = 183 }: ReuseWindow = {}): Promise<ReusableScan | null> {
+  const own = await newestScan("clinicId = $clinicId", { clinicId: clinic.id }, ownDays);
+  if (own.length) return own[0];
+  if (!clinic.placeId) return null;
+  const shared = await newestScan("scan.place.placeId = $placeId", { placeId: clinic.placeId }, anyDays);
+  return shared.find((s) => !clinic.website || sameWebsite(clinic.website, s.scan.place.website)) ?? null;
+}
+
+async function newestScan(where: string, params: Record<string, unknown>, maxAgeDays: number): Promise<ReusableScan[]> {
   const db = await getDb();
   const since = new Date(Date.now() - maxAgeDays * 24 * 3600 * 1000).toISOString();
-  const [rows] = await db.query<[unknown[]]>(
-    "SELECT * FROM analysis WHERE clinicId = $clinicId AND scan != NONE AND createdAt >= $since ORDER BY createdAt DESC LIMIT 1",
-    { clinicId, since },
-  );
-  return rows.length ? Analysis.parse(toPlain(rows[0])).scan ?? null : null;
+  const [rows] = await db.query<[unknown[]]>(`SELECT * FROM analysis WHERE ${where} AND scan != NONE AND createdAt >= $since ORDER BY createdAt DESC LIMIT 20`, { ...params, since });
+  return rows.map((r) => Analysis.parse(toPlain(r))).flatMap((a) => (a.scan ? [{ scan: a.scan, reusedFrom: a.id }] : []));
 }
 
 /** A new analysis that starts at the services checkpoint with a copied scan: all quick-scan phases already done. */
-export async function createAnalysisFromScan(clinicId: string, scan: ScanResult): Promise<Analysis> {
+export async function createAnalysisFromScan(clinicId: string, { scan, reusedFrom }: ReusableScan): Promise<Analysis> {
   const db = await getDb();
   const id = newId("analysis");
   const now = nowIso();
@@ -58,6 +72,7 @@ export async function createAnalysisFromScan(clinicId: string, scan: ScanResult)
     status: "awaiting_services",
     phases: phasesFor("quick_scan").map((p) => ({ ...p, status: "done", startedAt: now, finishedAt: now })),
     scan,
+    reusedFrom,
     createdAt: now,
     updatedAt: now,
   });

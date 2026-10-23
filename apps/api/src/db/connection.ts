@@ -15,6 +15,7 @@ DEFINE TABLE IF NOT EXISTS site_fetch SCHEMALESS;
 DEFINE TABLE IF NOT EXISTS memory SCHEMALESS;
 DEFINE INDEX IF NOT EXISTS clinic_owner ON clinic FIELDS ownerId;
 DEFINE INDEX IF NOT EXISTS analysis_clinic ON analysis FIELDS clinicId;
+DEFINE INDEX IF NOT EXISTS analysis_place ON analysis FIELDS scan.place.placeId;
 DEFINE INDEX IF NOT EXISTS review_place ON review FIELDS placeId;
 DEFINE INDEX IF NOT EXISTS memory_clinic ON memory FIELDS clinicId;
 `;

@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { resetDbForTests } from "../../src/db/connection.js";
 import { createClinic } from "../../src/db/clinics.js";
-import { createAnalysis, getAnalysis, latestSucceeded, listAnalyses, phasesFor, saveReport, setPhase, transition } from "../../src/db/analyses.js";
-import { fixtureReport } from "@clinix/contracts/fixtures";
+import { createAnalysis, createAnalysisFromScan, getAnalysis, latestSucceeded, listAnalyses, phasesFor, reusableScan, saveReport, setPhase, transition } from "../../src/db/analyses.js";
+import { getDb } from "../../src/db/connection.js";
+import { rid } from "../../src/db/records.js";
+import { fixtureAnalysis, fixtureReport } from "@clinix/contracts/fixtures";
 
 const clinicInput = { name: "Test Dental", address: "1 Main St", city: "Toronto", province: "ON", disciplines: ["dentistry" as const], services: [] };
 
@@ -58,5 +60,58 @@ describe("analysis repository", () => {
 
   it("returns null for an unknown analysis", async () => {
     expect(await getAnalysis("analysis_nope")).toBeNull();
+  });
+});
+
+describe("reusableScan", () => {
+  const listing = { placeId: "place_own", website: "https://www.finchfamilydental.example" };
+  const scan = fixtureAnalysis.scan!;
+  const daysAgo = (n: number) => new Date(Date.now() - n * 24 * 3600 * 1000).toISOString();
+  /** A finished scan of `placeId` for `clinicId`, back-dated by `ageDays`. */
+  const scannedAt = async (clinicId: string, ageDays: number) => {
+    const a = await createAnalysis(clinicId);
+    const db = await getDb();
+    await db.update(rid("analysis", a.id)).merge({ scan, createdAt: daysAgo(ageDays) });
+    return a.id;
+  };
+
+  beforeEach(async () => {
+    await resetDbForTests();
+  });
+
+  it("copies the clinic's own scan from the last 30 days, and remembers where it came from", async () => {
+    const mine = await createClinic({ ...clinicInput, ...listing }, "user_1");
+    const id = await scannedAt(mine.id, 10);
+    const found = await reusableScan(mine);
+    expect(found?.reusedFrom).toBe(id);
+    const copy = await createAnalysisFromScan(mine.id, found!);
+    expect(copy.reusedFrom).toBe(id);
+    expect(copy.status).toBe("awaiting_services");
+  });
+
+  it("copies another account's scan of the same listing within 183 days when the website matches", async () => {
+    const theirs = await createClinic({ ...clinicInput, ...listing }, "user_other");
+    const id = await scannedAt(theirs.id, 100);
+    const mine = await createClinic({ ...clinicInput, ...listing }, "user_1");
+    expect((await reusableScan(mine))?.reusedFrom).toBe(id);
+  });
+
+  it("does not reuse a scan older than 183 days, of a different website, or of a clinic without a listing", async () => {
+    const theirs = await createClinic({ ...clinicInput, ...listing }, "user_other");
+    await scannedAt(theirs.id, 200);
+    const mine = await createClinic({ ...clinicInput, ...listing }, "user_1");
+    expect(await reusableScan(mine)).toBeNull();
+
+    await scannedAt(theirs.id, 50);
+    const otherSite = await createClinic({ ...clinicInput, placeId: "place_own", website: "https://new-owner-dental.example" }, "user_1");
+    expect(await reusableScan(otherSite)).toBeNull();
+    const noListing = await createClinic(clinicInput, "user_1");
+    expect(await reusableScan(noListing)).toBeNull();
+  });
+
+  it("ignores the clinic's own scan once it is older than 30 days", async () => {
+    const mine = await createClinic(clinicInput, "user_1");
+    await scannedAt(mine.id, 45);
+    expect(await reusableScan(mine)).toBeNull();
   });
 });

@@ -9,12 +9,15 @@ import type { PipelineDeps } from "../pipeline/deps.js";
 import { validateSelection } from "../pipeline/discover.js";
 import { recoverInterrupted, stageRunners, type StageRunners } from "../pipeline/runner.js";
 import { distanceKm, ringFor } from "../lib/geo.js";
+import { log } from "../lib/log.js";
 
 const ServicesBody = z.object({ services: z.array(z.string().min(1)).min(1).max(12) });
 const SelectionBody = z.object({ placeIds: z.array(z.string().min(1)).max(40) });
 /** A listing the owner picked from the lookup (`placeId`), or a name to search for. */
 const AddCompetitorBody = z.object({ placeId: z.string().min(1).max(200) }).or(z.object({ query: z.string().min(2).max(120) }));
 const StatusBody = z.object({ status: z.enum(["todo", "in_progress", "done"]) });
+/** `forceRefresh` asks for a new quick scan even when a recent one could be copied. Owners and administrators only. */
+const StartBody = z.object({ forceRefresh: z.boolean().optional() });
 
 /** Routes under /clinics/:id/analyses. `deps` and `run` are injected so tests can use fakes. */
 export function analysesRoutes(deps: PipelineDeps, run: StageRunners = stageRunners) {
@@ -30,7 +33,10 @@ export function analysesRoutes(deps: PipelineDeps, run: StageRunners = stageRunn
       if (!canManage(c.var, clinic)) return c.json(OWNER_ONLY, 403);
       const inFlight = (await listAnalyses(clinic.id)).find((a) => a.status === "queued" || a.status === "running");
       if (inFlight) return c.json(inFlight, 200);
-      const previous = await reusableScan(clinic.id);
+      const body = StartBody.safeParse(await c.req.json().catch(() => ({})));
+      const wantsFresh = body.success && body.data.forceRefresh === true;
+      if (wantsFresh && c.get("isGuest")) log.info({ clinicId: clinic.id }, "forceRefresh ignored for a guest");
+      const previous = wantsFresh && !c.get("isGuest") ? null : await reusableScan(clinic);
       if (previous) return c.json(await createAnalysisFromScan(clinic.id, previous), 201);
       const analysis = await createAnalysis(clinic.id);
       void run.quickScan(analysis.id, deps);

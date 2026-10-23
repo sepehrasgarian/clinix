@@ -113,6 +113,8 @@ export const Analysis = z.object({
   discovery: DiscoveryResult.optional(),
   report: Report.optional(),
   error: z.string().optional(),
+  /** The earlier analysis whose quick scan this one copied instead of scanning again. */
+  reusedFrom: Id.optional(),
   createdAt: IsoDate,
   updatedAt: IsoDate,
 });
