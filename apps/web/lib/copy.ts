@@ -695,6 +695,7 @@ export const copy = {
       stages: [
         { phase: "reviews", title: "Collecting and analyzing reviews", now: "We're analyzing available patient reviews for your clinic and its selected competitors.", text: "Analyzing available patient reviews for the clinic and its selected competitors." },
         { phase: "websites", title: "Analyzing competitor websites", now: "We're reviewing services, website content, online presence, and other available public information.", text: "Reviewing services, website content, online presence, and other available public information." },
+        { phase: "site_health", title: "Checking your website and Google profile", now: "We're measuring your site's speed, structure and service pages, and your Google listing's completeness.", text: "Measuring your site's speed, structure and service pages, and your Google listing's completeness." },
         { phase: "mine", title: "Finding opportunities with evidence", now: "We're identifying strengths, weaknesses, and opportunities supported by the collected data.", text: "Identifying meaningful strengths, weaknesses, and opportunities supported by the collected data." },
         { phase: "synthesize", title: "Preparing your action plan", now: "We're organizing verified findings into prioritized recommendations for your clinic.", text: "Turning findings into prioritized recommendations." },
       ],

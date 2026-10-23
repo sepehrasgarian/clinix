@@ -12,7 +12,7 @@ vi.mock("@/lib/api", () => ({ retryAnalysis: (...a: unknown[]) => retryAnalysis(
 
 const done = { ...fixtureAnalysis, report: fixtureReport };
 const phase = (p: Analysis["phases"][number]["phase"], status: Analysis["phases"][number]["status"]) => ({ phase: p, status });
-const deepPhases = (...s: Analysis["phases"][number]["status"][]) => (["reviews", "websites", "mine", "synthesize"] as const).map((p, i) => phase(p, s[i] ?? "pending"));
+const deepPhases = (...s: Analysis["phases"][number]["status"][]) => (["reviews", "websites", "site_health", "mine", "synthesize"] as const).map((p, i) => phase(p, s[i] ?? "pending"));
 const newer = (over: Partial<Analysis>): Analysis => ({ ...fixtureAnalysis, id: "analysis_new", report: undefined, createdAt: "2026-10-22T10:00:00.000Z", status: "running", ...over });
 
 beforeEach(() => { refresh.mockClear(); retryAnalysis.mockReset(); });
@@ -35,12 +35,12 @@ describe("resolveDashboard", () => {
 
 describe("stageRows", () => {
   it("never shows a stage as running on a failed run and marks only the stopped one", () => {
-    const rows = stageRows(newer({ status: "failed", phases: deepPhases("done", "running", "pending", "pending") }));
-    expect(rows.map((r) => r.status)).toEqual(["done", "failed", "pending", "pending"]);
+    const rows = stageRows(newer({ status: "failed", phases: deepPhases("done", "running", "pending", "pending", "pending") }));
+    expect(rows.map((r) => r.status)).toEqual(["done", "failed", "pending", "pending", "pending"]);
   });
   it("marks the next pending stage as stopped when none was running", () => {
     const rows = stageRows(newer({ status: "failed", phases: deepPhases("done", "done") }));
-    expect(rows.map((r) => r.status)).toEqual(["done", "done", "failed", "pending"]);
+    expect(rows.map((r) => r.status)).toEqual(["done", "done", "failed", "pending", "pending"]);
   });
 });
 

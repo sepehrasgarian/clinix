@@ -16,15 +16,15 @@ describe("RunView", () => {
   it("shows the real stages: completed with its measured time, the one running, the rest pending, and no invented percentage", () => {
     render(<RunView clinic={fixtureClinic} analysis={running([{ phase: "reviews", status: "done", startedAt: at("00:00"), finishedAt: at("01:12") }, { phase: "websites", status: "running", startedAt: at("01:12") }])} onRefresh={vi.fn()} />);
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Your analysis is in progress");
-    expect(screen.getByRole("img", { name: "1 of 4 steps completed" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "1 of 5 steps completed" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: "Analyzing competitor websites" })).toBeInTheDocument();
     const stages = screen.getByRole("region", { name: "Stages" });
-    expect(within(stages).getAllByRole("listitem")).toHaveLength(4);
+    expect(within(stages).getAllByRole("listitem")).toHaveLength(5);
     expect(within(stages).getByText("Completed")).toBeInTheDocument();
     expect(within(stages).getByText("1m 12s")).toBeInTheDocument();
     expect(within(stages).getByText("In progress")).toBeInTheDocument();
     expect(within(stages).getByText(/01/)).toBeInTheDocument();
-    expect(within(stages).getAllByText("Pending")).toHaveLength(2);
+    expect(within(stages).getAllByText("Pending")).toHaveLength(3);
     expect(screen.queryByText(/%/)).toBeNull();
   });
 
@@ -62,7 +62,7 @@ describe("RunView", () => {
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("We couldn't finish preparing your report");
     expect(screen.getByText(/Your completed analysis steps have been saved/)).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: "Analyzing competitor websites" })).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: "1 of 4 steps completed" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "1 of 5 steps completed" })).toBeInTheDocument();
     expect(screen.getAllByText("Stopped").length).toBeGreaterThan(0);
     expect(screen.queryByText(/is running|Running for|In progress/)).toBeNull();
     expect(screen.queryByText("You can safely leave this page")).toBeNull();

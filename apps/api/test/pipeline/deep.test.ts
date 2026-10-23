@@ -89,7 +89,7 @@ describe("deep analysis", () => {
     await startDeep(a.id, d);
     const after = (await getAnalysis(a.id))!;
     expect(after.status).toBe("succeeded");
-    expect(after.phases.map((p) => p.status)).toEqual(["done", "done", "done", "done"]);
+    expect(after.phases.map((p) => p.status)).toEqual(["done", "done", "done", "done", "done"]);
     const report = after.report!;
     // 5 businesses, but one has fewer than three reviews and is skipped: 4 x 2 proposals.
     expect(report.findings.length).toBe(8);
@@ -110,6 +110,8 @@ describe("deep analysis", () => {
     expect(withSite[0].servicesNotOnYourSite).toEqual(["dental implants"]);
     expect(report.competitors.filter((c) => !c.website).every((c) => c.siteStatus === "no_website")).toBe(true);
     // the report agent and the discipline agents were told what rival sites say
+    // the site-health phase ran: the fixture clinic has a website that cannot be fetched in tests, so the audit is thin but present
+    expect(report.siteHealth).toMatchObject({ website: expect.stringContaining("finchfamilydental"), gbp: { hasWebsite: true } });
     const prompts = (d.ai.structured as ReturnType<typeof vi.fn>).mock.calls.map((c) => (c[0] as { user: string }).user);
     expect(prompts.some((u) => u.includes("COMPETITOR WEBSITES") && u.includes("not on the owner's site: dental implants"))).toBe(true);
     expect(prompts.some((u) => u.startsWith("# Discipline") && u.includes("booking: online"))).toBe(true);

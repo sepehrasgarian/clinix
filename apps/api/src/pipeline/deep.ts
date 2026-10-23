@@ -1,4 +1,4 @@
-import type { Analysis, Clinic, Competitor, DisciplineSection, Finding, Place, PhaseId, Report, Review } from "@clinix/contracts";
+import type { Analysis, Clinic, Competitor, DisciplineSection, Finding, Place, PhaseId, Report, Review, SeoAudit } from "@clinix/contracts";
 import { latestSucceeded } from "../db/analyses.js";
 import { dedupeFindings, ledgerFor } from "../lib/citations.js";
 import { buildRunDiff } from "../lib/diff.js";
@@ -9,6 +9,7 @@ import { buildScorecard, type Peer } from "../lib/scorecard.js";
 import type { PipelineDeps } from "./deps.js";
 import { assignCompetitors, mineDiscipline, writeDisciplineSection } from "./disciplineAgent.js";
 import { collectReviews } from "./reviews.js";
+import { auditSite, siteHealthLines } from "./siteHealth.js";
 import { readCompetitorSites, servicesGap, siteSummaryLines } from "./websites.js";
 import { synthesizePlan } from "./synthesize.js";
 
@@ -16,7 +17,7 @@ import { synthesizePlan } from "./synthesize.js";
 export const MIN_SOLID_COMPETITORS = 3;
 export const MIN_REVIEWS_SOLID = 10;
 
-export type DeepHooks = { onPhase: (phase: Extract<PhaseId, "reviews" | "websites" | "mine" | "synthesize">, fn: () => Promise<void>) => Promise<void> };
+export type DeepHooks = { onPhase: (phase: Extract<PhaseId, "reviews" | "websites" | "site_health" | "mine" | "synthesize">, fn: () => Promise<void>) => Promise<void> };
 
 /**
  * Phases 5-7. One discipline agent per discipline the clinic offers reads the clinic's and its
@@ -63,6 +64,11 @@ export async function runDeepAnalysis(clinic: Clinic, analysis: Analysis, deps: 
     }
   });
   const rivalSites = siteSummaryLines(competitors);
+
+  let siteHealth: SeoAudit | null = null;
+  await hooks.onPhase("site_health", async () => {
+    siteHealth = await auditSite({ place: scan.place, understanding: scan.understanding, disciplines: clinic.disciplines, competitors, reviewsByPlace }, { pagespeedKey: deps.pagespeedKey });
+  });
   const thinReport = competitors.filter((c) => c.reviewsAnalyzed >= MIN_REVIEWS_SOLID).length < MIN_SOLID_COMPETITORS;
   const byDiscipline = assignCompetitors(clinic.disciplines, competitors);
 
@@ -88,7 +94,7 @@ export async function runDeepAnalysis(clinic: Clinic, analysis: Analysis, deps: 
 
   let report!: Report;
   await hooks.onPhase("synthesize", async () => {
-    const plan = await synthesizePlan(clinic, findings, scorecard, nameOf, isNew, deps, rivalSites);
+    const plan = await synthesizePlan(clinic, findings, scorecard, nameOf, isNew, deps, rivalSites, siteHealthLines(siteHealth));
     const sections: DisciplineSection[] = await Promise.all(
       clinic.disciplines.map((discipline) =>
         writeDisciplineSection(
@@ -126,6 +132,7 @@ export async function runDeepAnalysis(clinic: Clinic, analysis: Analysis, deps: 
       thinReport,
       reviews,
       disciplines: sections,
+      siteHealth,
     };
     const previous = await latestSucceeded(clinic.id, analysis.id);
     if (previous?.report) {

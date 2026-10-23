@@ -289,6 +289,26 @@ export const fixtureReport: Report = {
     },
   ],
   reviews: fixtureReviews,
+  siteHealth: {
+    website: "https://finchfamilydental.example",
+    robots: { exists: true, fetchOk: true, disallowsEverything: false, sitemapUrls: ["https://finchfamilydental.example/sitemap.xml"] },
+    sitemap: { exists: true, urlCount: 14, isStale: true },
+    pagespeedMobile: { performanceScore: 41, lcpMs: 4800, cls: 0.21, inpMs: 350 },
+    pagespeedDesktop: { performanceScore: 78, lcpMs: 1900, cls: 0.03, inpMs: 120 },
+    pages: [
+      { url: "https://finchfamilydental.example/", hasTitle: true, titleLength: 58, hasMetaDescription: false, hasCanonical: true, h1Count: 1, hasViewportMeta: true, isHttps: true, imagesMissingAlt: 3 },
+      { url: "https://finchfamilydental.example/invisalign", hasTitle: true, titleLength: 32, hasMetaDescription: true, hasCanonical: true, h1Count: 1, hasViewportMeta: true, isHttps: true, imagesMissingAlt: 0 },
+    ],
+    serviceCoverage: [
+      { service: "Invisalign", covered: true, matchedUrl: "https://finchfamilydental.example/invisalign" },
+      { service: "emergency dentistry", covered: false },
+      { service: "whitening", covered: false },
+    ],
+    schemaMarkup: { present: true, types: ["Dentist"], nameMatches: true, phoneMatches: false },
+    keywordGaps: ["same day dentist", "cracked tooth"],
+    gbp: { hasWebsite: true, hasHours: true, missingCategory: "Dental hygiene", reviews90d: { yours: 4, median: 11 }, responseRate: { yours: 0.25, median: 0.6 } },
+    fetchedAt: "2026-10-19T15:07:05.000Z",
+  },
   disciplines: [
     {
       discipline: "dentistry",
@@ -338,6 +358,7 @@ export const fixtureAnalysis: Analysis = {
     { phase: "discover", status: "done", startedAt: "2026-10-19T15:01:30.000Z", finishedAt: "2026-10-19T15:02:40.000Z" },
     { phase: "reviews", status: "done", startedAt: "2026-10-19T15:04:00.000Z", finishedAt: "2026-10-19T15:06:10.000Z" },
     { phase: "websites", status: "done", startedAt: "2026-10-19T15:06:10.000Z", finishedAt: "2026-10-19T15:06:40.000Z" },
+    { phase: "site_health", status: "done", startedAt: "2026-10-19T15:06:40.000Z", finishedAt: "2026-10-19T15:07:05.000Z" },
     { phase: "mine", status: "done", startedAt: "2026-10-19T15:06:10.000Z", finishedAt: "2026-10-19T15:09:30.000Z" },
     { phase: "synthesize", status: "done", startedAt: "2026-10-19T15:09:30.000Z", finishedAt: "2026-10-19T15:12:00.000Z" },
   ],

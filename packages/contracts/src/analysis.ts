@@ -24,6 +24,7 @@ export const PhaseId = z.enum([
   "discover",
   "reviews",
   "websites",
+  "site_health",
   "mine",
   "synthesize",
 ]);
@@ -36,6 +37,7 @@ export const PHASE_LABELS: Record<PhaseId, string> = {
   discover: "Finding competitors near you",
   reviews: "Reading patient reviews",
   websites: "Reading competitor websites",
+  site_health: "Checking your website and Google profile",
   mine: "Looking for patterns with evidence",
   synthesize: "Writing your action plan",
 };

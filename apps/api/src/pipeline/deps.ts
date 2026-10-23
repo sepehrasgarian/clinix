@@ -8,8 +8,7 @@ export type PipelineDeps = {
   places: PlacesClient;
   ai: AiClient;
   reviews: ReviewSource;
-  guides: GuideLibrary;
-};
+  guides: GuideLibrary; /** Optional: PageSpeed Insights key for the site-health audit. */ pagespeedKey?: string };
 
 /** Without a review-source token the deep stage still runs, on each listing's Google sample reviews. */
 const noReviewSource: ReviewSource = {
@@ -25,5 +24,6 @@ export function buildDeps(): PipelineDeps {
     ai: new AnthropicClient(env.ANTHROPIC_API_KEY),
     reviews: env.APIFY_TOKEN ? new ApifyClient(env.APIFY_TOKEN) : noReviewSource,
     guides: buildGuideLibrary(),
+    pagespeedKey: env.PAGESPEED_API_KEY,
   };
 }

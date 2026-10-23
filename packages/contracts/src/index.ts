@@ -7,4 +7,5 @@ export * from "./report";
 export * from "./analysis";
 export * from "./market";
 export * from "./site";
+export * from "./seo";
 export * from "./chat";

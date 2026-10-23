@@ -2,6 +2,7 @@ import { z } from "zod";
 import { Discipline, Id, IsoDate } from "./common";
 import { Review } from "./place";
 import { Understanding } from "./site";
+import { SeoAudit } from "./seo";
 
 export const ReviewCitation = z.object({
   reviewId: Id,
@@ -141,5 +142,7 @@ export const Report = z.object({
   reviews: z.array(Review).default([]),
   /** One section per discipline the clinic offers. */
   disciplines: z.array(DisciplineSection).default([]),
+  /** Website and Google profile checks. Null when the check could not run this time. */
+  siteHealth: SeoAudit.nullable().optional(),
 });
 export type Report = z.infer<typeof Report>;

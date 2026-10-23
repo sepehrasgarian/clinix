@@ -16,7 +16,7 @@ export const Understanding = z.object({
   telehealth: z.boolean().optional(),
   /** Parking, wheelchair access, transit, evening or weekend hours, as the site states them. */
   accessibility: z.array(z.string()).default([]),
-  locationsCount: z.number().int().positive().optional(),
+  locationsCount: z.number().int().nonnegative().optional(),
   pricingShown: z.boolean().optional(),
   socialLinks: z.array(z.string()).default([]),
   /** The most recent dated content found (a blog post, a news item), as a short note. */

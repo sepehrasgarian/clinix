@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/Card";
 import { formatDate } from "@/lib/format";
 import { ActionPlan } from "./ActionPlan";
 import { CompetitorsSection } from "./CompetitorsSection";
+import { DigitalPerformance } from "./DigitalPerformance";
 import { DisciplineTabs } from "./DisciplineTabs";
 import { MonthOverMonth } from "./MonthOverMonth";
 import { Overview } from "./Overview";
@@ -23,8 +24,10 @@ export function ReportPage({ clinic, analysis, report, inProgress }: { clinic: C
     { id: "changes", label: "Month over month" },
     ...(report.disciplines.length > 0 ? [{ id: "disciplines", label: "Disciplines" }] : []),
     { id: "competitors", label: "Competitors" },
+    { id: "digital", label: "Digital performance" },
     { id: "plan", label: "Action plan" },
   ];
+  const numberOf = (id: string) => String(sections.findIndex((s) => s.id === id) + 1).padStart(2, "0");
   const status = inProgress ? (inProgress.status === "awaiting_competitors" || inProgress.status === "awaiting_services" ? "Previous report · new analysis awaiting you" : "Previous report · new analysis in progress") : "Latest completed report";
 
   return (
@@ -45,29 +48,34 @@ export function ReportPage({ clinic, analysis, report, inProgress }: { clinic: C
       <SectionMenu sections={sections} />
 
       <section id="overview" className="scroll-mt-16 py-8">
-        <SectionHeading number="01" label="Executive overview" title="Where your clinic stands" />
+        <SectionHeading number={numberOf("overview")} label="Executive overview" title="Where your clinic stands" />
         <Overview report={report} analysis={analysis} clinicId={clinic.id} clinicName={clinic.name} opened={clinic.opened} area={clinic.city} onOpen={(rec, index) => setDrawer({ rec, index })} />
       </section>
 
       <section id="changes" className="scroll-mt-16 py-8">
-        <SectionHeading number="02" label="Month over month" title="What changed since last time" />
+        <SectionHeading number={numberOf("changes")} label="Month over month" title="What changed since last time" />
         <MonthOverMonth report={report} />
       </section>
 
       {report.disciplines.length > 0 && (
         <section id="disciplines" className="scroll-mt-16 py-8">
-          <SectionHeading number="03" label="Disciplines" title="Where you stand in each discipline" intro="Each discipline is compared with its own competitors, never one blended ranking." />
+          <SectionHeading number={numberOf("disciplines")} label="Disciplines" title="Where you stand in each discipline" intro="Each discipline is compared with its own competitors, never one blended ranking." />
           <DisciplineTabs report={report} analysis={analysis} clinicName={clinic.name} clinicId={clinic.id} analysisId={analysis.id} />
         </section>
       )}
 
       <section id="competitors" className="scroll-mt-16 py-8">
-        <SectionHeading number={report.disciplines.length > 0 ? "04" : "03"} label="Competitors" title={`${report.competitors.length} clinics competing for your patients`} intro="Open a clinic for what its patients say, one of its reviews and its website." />
+        <SectionHeading number={numberOf("competitors")} label="Competitors" title={`${report.competitors.length} clinics competing for your patients`} intro="Open a clinic for what its patients say, one of its reviews and its website." />
         <CompetitorsSection report={report} disciplines={clinic.disciplines} />
       </section>
 
+      <section id="digital" className="scroll-mt-16 py-8">
+        <SectionHeading number={numberOf("digital")} label="Digital performance" title="Your website and local visibility" intro="Technical and local-search checks, measured on your own site and Google listing." />
+        <DigitalPerformance audit={report.siteHealth} />
+      </section>
+
       <section id="plan" className="scroll-mt-16 py-8">
-        <SectionHeading number={report.disciplines.length > 0 ? "05" : "04"} label="Action plan" title="What to do, and when" intro="Work top to bottom; your next report shows what changed." />
+        <SectionHeading number={numberOf("plan")} label="Action plan" title="What to do, and when" intro="Work top to bottom; your next report shows what changed." />
         <ActionPlan report={report} clinicId={clinic.id} analysisId={analysis.id} clinicName={clinic.name} onOpen={(rec, index) => setDrawer({ rec, index })} />
       </section>
 

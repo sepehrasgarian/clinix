@@ -14,6 +14,8 @@ const EnvSchema = z.object({
   GOOGLE_PLACES_API_KEY: z.string().min(1).optional(),
   APIFY_TOKEN: z.string().min(1).optional(),
   CLERK_SECRET_KEY: z.string().min(1).optional(),
+  /** Google PageSpeed Insights; without it the site-health audit skips the speed scores. */
+  PAGESPEED_API_KEY: z.string().min(1).optional(),
   SURREAL_URL: z.string().min(1).default("surrealkv://./data/clinix"),
   /** Model per tier (see clients/anthropic.ts) and which tier reads reviews. */
   MODEL_STRONG: z.string().min(1).optional(),

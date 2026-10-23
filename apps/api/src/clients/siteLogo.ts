@@ -1,12 +1,11 @@
-import { assertPublicHost, type HostResolver } from "../lib/publicHost.js";
+import { safeGet as safeGetAny, type FetchDeps } from "../lib/safeFetch.js";
 
 export type LogoImage = { bytes: ArrayBuffer; contentType: string };
-type Deps = { fetchImpl?: typeof fetch; resolveHost?: HostResolver };
+type Deps = FetchDeps;
 
 const MAX_HTML = 400_000;
 const MAX_IMAGE = 600_000;
 const TIMEOUT_MS = 5000;
-const MAX_REDIRECTS = 3;
 const IMAGE_TYPES = /^image\/(png|jpe?g|webp|gif|svg\+xml|x-icon|vnd\.microsoft\.icon)$/i;
 
 const attr = (tag: string, name: string) => tag.match(new RegExp(`\\b${name}\\s*=\\s*("([^"]*)"|'([^']*)'|([^\\s>]+))`, "i"))?.slice(2).find((v) => v !== undefined);
@@ -64,26 +63,10 @@ export function iconCandidates(html: string, base: URL): string[] {
   return list.includes(fallback) ? list : [...list, fallback];
 }
 
-/** Fetches a public http(s) URL with a timeout, a size cap and every redirect checked, so it cannot be steered inward. */
-async function safeGet(url: string, max: number, { fetchImpl = fetch, resolveHost }: Deps): Promise<{ bytes: ArrayBuffer; contentType: string; finalUrl: URL } | null> {
-  let current = new URL(url);
-  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
-    if (current.protocol !== "http:" && current.protocol !== "https:") return null;
-    await assertPublicHost(current.hostname, resolveHost);
-    const res = await fetchImpl(current, { redirect: "manual", signal: AbortSignal.timeout(TIMEOUT_MS), headers: { "user-agent": "ClinxBot/1.0 (+https://clinx.app)", accept: "text/html,image/*;q=0.9" } });
-    if (res.status >= 300 && res.status < 400) {
-      const next = res.headers.get("location");
-      if (!next) return null;
-      current = new URL(next, current);
-      continue;
-    }
-    if (!res.ok) return null;
-    if (Number(res.headers.get("content-length") ?? 0) > max) return null;
-    const bytes = await res.arrayBuffer();
-    if (bytes.byteLength > max) return null;
-    return { bytes, contentType: res.headers.get("content-type") ?? "", finalUrl: current };
-  }
-  return null;
+/** A 2xx response within the size cap, through the shared public-host guard. */
+async function safeGet(url: string, max: number, deps: Deps): Promise<{ bytes: ArrayBuffer; contentType: string; finalUrl: URL } | null> {
+  const got = await safeGetAny(url, { ...deps, max, timeoutMs: TIMEOUT_MS });
+  return got && got.status >= 200 && got.status < 300 ? got : null;
 }
 
 /** The site's logo as an image: the logo it declares, or its touch icon or favicon, validated as a small real image. Null when there is none. */
