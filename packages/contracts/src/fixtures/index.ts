@@ -394,9 +394,9 @@ export const fixtureAnalysis: Analysis = {
       trustSignals: ["Serving Finch East since 2019"],
     },
     hints: [
-      { kind: "review_gap", text: "You have 128 Google reviews. The 6 clinics nearest you have a median of 310.", why: "Patients compare review counts before they book, and Google uses them when it ranks clinics in Maps." },
-      { kind: "rating_strength", text: "Your 4.6\u2605 rating matches or beats at least half of the 6 clinics nearest you.", why: "That's an advantage worth putting in front of new patients." },
-      { kind: "crowded_market", text: "11 clinics within 5 km are after the same patients.", why: "Your report shows what each of them does better or worse than you." },
+      { kind: "review_gap", tone: "problem", yours: 128, nearby: 310, nearbyCount: 6, text: "You have 128 Google reviews. The 6 clinics nearest you have a median of 310.", why: "Patients compare review counts before they book, and Google uses them when it ranks clinics in Maps." },
+      { kind: "rating_strength", tone: "strength", yours: 4.6, nearby: 4.5, nearbyCount: 6, text: "Your 4.6\u2605 rating matches or beats at least half of the 6 clinics nearest you.", why: "That's an advantage worth putting in front of new patients." },
+      { kind: "crowded_market", tone: "context", nearbyCount: 11, atLeast: false, text: "11 clinics within 5 km are after the same patients.", why: "Your report shows what each of them does better or worse than you." },
     ],
     competitorCountsPerService: [
       { service: "cleaning", count: 14 },

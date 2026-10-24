@@ -55,7 +55,8 @@ describe("translating", () => {
 });
 
 describe("dictionaries", () => {
-  const english = strings(copy.landing);
+  // The landing page is translated in full; the setup screens contribute only the strings already wired for translation.
+  const english = [...strings(copy.landing), ...strings(copy.onboarding.hints)];
   it.each(nonEnglish)("%s: every entry matches a real English string, so a copy edit cannot silently orphan it", (lang) => {
     const known = new Set(english);
     const orphans = Object.keys(dictionaries[lang] ?? {}).filter((k) => !known.has(k));

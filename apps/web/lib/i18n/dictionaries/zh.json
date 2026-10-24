@@ -336,5 +336,20 @@
  "Already have an account?": "已有账户？",
  "Password": "密码",
  "or continue with email": "或使用邮箱继续",
- "Continue": "继续"
+ "Continue": "继续",
+ "What stands out for your clinic": "您的诊所的突出之处",
+ "Measured from your Google profile and the clinics closest to you.": "根据您的 Google 资料和离您最近的诊所测得。",
+ "Full report after your plan": "选择方案后提供完整报告",
+ "Nothing stood out from the measurements this time. Your full report will go deeper.": "这次的测量没有发现突出之处。完整报告会做更深入的分析。",
+ "To improve:": "待改进：",
+ "Strength:": "优势：",
+ "Context:": "背景：",
+ "Your {yours} reviews against a nearby median of {nearby}": "您的 {yours} 条评价，附近中位数为 {nearby}",
+ "Your {yours}★ rating against a nearby median of {nearby}★": "您的评分 {yours}★，附近中位数为 {nearby}★",
+ "Your {yours}★ rating is at or above the nearby median of {nearby}★": "您的评分 {yours}★ 达到或高于附近中位数 {nearby}★",
+ "No website on your Google profile": "您的 Google 资料中没有网站",
+ "{count} clinics within 5 km": "5 公里内有 {count} 家诊所",
+ "Measured over the {count} clinics nearest you.": "基于离您最近的 {count} 家诊所测得。",
+ "Your full action plan": "您的完整行动计划",
+ "Your report reads every nearby competitor's reviews and website, then ranks what to fix first.": "报告会阅读附近每家竞争对手的评价和网站，然后排出优先修复的顺序。"
 }

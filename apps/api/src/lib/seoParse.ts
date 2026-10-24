@@ -1,7 +1,8 @@
 /** Pure parsers for the site-health audit. Regex on HTML is enough for these checks; no DOM library. */
 
-/** Lowercase, accents folded, so "Montréal" matches "montreal". */
-export const fold = (s: string): string => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+import { fold } from "./text.js";
+
+export { fold };
 
 export const digits = (s: string): string => s.replace(/\D/g, "");
 

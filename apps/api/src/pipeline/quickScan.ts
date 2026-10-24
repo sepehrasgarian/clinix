@@ -2,6 +2,7 @@ import { DISCIPLINE_LABELS, Understanding, type Clinic, type NearbyClinic, type 
 import { classifyBusiness } from "../clients/places.js";
 import { distanceKm } from "../lib/geo.js";
 import { matchesDisciplines } from "../lib/disciplineTypes.js";
+import { nameKey } from "../lib/text.js";
 import { buildScanHints, isNewClinic, medianStats, type MarketStats } from "../lib/hints.js";
 import { understandExtractPrompt, understandQuestion, understandSystem } from "../prompts/understand.js";
 import type { PipelineDeps } from "./deps.js";
@@ -60,11 +61,13 @@ export async function understand(clinic: Clinic, place: Place, deps: PipelineDep
   return { ...extracted, services };
 }
 
-/** Market preview: how many same-type clinics offer each service within 5 km, plus leader stats for hints. */
+/** Market preview: how many same-type clinics offer each service within 5 km, and their medians for the hints. */
 export async function marketPreview(clinic: Clinic, place: Place, services: string[], deps: PipelineDeps) {
   const center = { lat: place.lat, lng: place.lng };
   const counts: { service: string; count: number }[] = [];
   const seen = new Map<string, Place>();
+  // One listing per clinic: Google sometimes returns the same clinic twice under different place ids.
+  const seenNames = new Set<string>();
 
   const results = await Promise.all(
     services.slice(0, 6).map(async (service) => ({ service, found: await deps.places.searchText(`${service} ${clinic.city}`, { near: center, radiusM: MARKET_RADIUS_M, max: SEARCH_PAGE }) })),
@@ -74,7 +77,11 @@ export async function marketPreview(clinic: Clinic, place: Place, services: stri
       (p) => p.placeId !== place.placeId && distanceKm(center, p) <= MARKET_RADIUS_KM && matchesDisciplines(p.types, clinic.disciplines),
     );
     counts.push({ service, count: nearby.length });
-    for (const p of nearby) seen.set(p.placeId, p);
+    for (const p of nearby) {
+      if (seen.has(p.placeId) || seenNames.has(nameKey(p.name))) continue;
+      seen.set(p.placeId, p);
+      seenNames.add(nameKey(p.name));
+    }
   }
 
   const peers = [...seen.values()];
@@ -84,16 +91,7 @@ export async function marketPreview(clinic: Clinic, place: Place, services: stri
     .slice(0, MAX_NEARBY);
   // A search that returned its full page may have more behind it, so the count is "at least".
   const capped = results.some((r) => r.found.length >= SEARCH_PAGE);
-  const rated = peers.filter((p) => p.rating !== undefined);
-  const leader = peers.filter((p) => p.reviewCount !== undefined).sort((a, b) => (b.reviewCount ?? 0) - (a.reviewCount ?? 0))[0];
-  const crowded = [...counts].sort((a, b) => b.count - a.count)[0];
-  const stats: MarketStats = {
-    leaderReviewCount: leader?.reviewCount,
-    leaderName: leader?.name,
-    averageRating: rated.length ? rated.reduce((s, p) => s + (p.rating ?? 0), 0) / rated.length : undefined,
-    crowdedService: crowded,
-    ...medianStats(peers),
-  };
+  const stats: MarketStats = medianStats(peers);
   return { counts, stats, nearby, capped };
 }
 
@@ -113,6 +111,6 @@ export async function runQuickScan(clinic: Clinic, deps: PipelineDeps, hooks: Ph
   });
 
   const { counts, stats, nearby, capped } = await marketPreview(clinic, place, understanding.services, deps).catch(() => ({ counts: [], stats: {} as MarketStats, nearby: [] as NearbyClinic[], capped: false }));
-  const hints = buildScanHints(place, stats, { clinicIsNew: isNewClinic(clinic.opened) });
+  const hints = buildScanHints(place, stats, { clinicIsNew: isNewClinic(clinic.opened), capped });
   return { place, understanding, hints, competitorCountsPerService: counts, nearby, radiusKm: MARKET_RADIUS_M / 1000, nearbyCapped: capped };
 }

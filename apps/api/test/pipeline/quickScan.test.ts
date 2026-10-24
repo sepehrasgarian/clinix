@@ -75,12 +75,18 @@ describe("understand", () => {
 });
 
 describe("marketPreview", () => {
-  it("counts nearby peers per service, excludes self and far places, and finds the leader", async () => {
+  it("counts nearby peers per service, excludes self and far places, and measures only the clinics themselves", async () => {
     const deps = fakeDeps();
     const { counts, stats } = await marketPreview(clinic, own, ["cleaning", "Invisalign"], deps);
     expect(counts).toEqual([{ service: "cleaning", count: 2 }, { service: "Invisalign", count: 2 }]);
-    expect(stats.leaderReviewCount).toBe(310);
-    expect(stats.averageRating).toBeCloseTo(4.5, 5);
+    expect(stats).toEqual({ nearbyCount: 2, ratedCount: 2, medianRating: undefined, reviewedCount: 2, medianReviews: undefined });
+  });
+  it("keeps one listing per clinic name, however Google spells it", async () => {
+    const twice = [peer("p_a", 4.8, 310), { ...peer("p_a2", 4.8, 310), name: "P_A" }, { ...peer("p_a3", 4.8, 310), name: "p-a." }, peer("p_b", 4.2, 90)];
+    const deps = fakeDeps({ places: { searchText: vi.fn(async () => twice) } });
+    const { nearby, stats } = await marketPreview(clinic, own, ["cleaning"], deps);
+    expect(nearby.map((c) => c.placeId)).toEqual(["p_a", "p_b"]);
+    expect(stats.nearbyCount).toBe(2);
   });
   it("lists the nearby clinics nearest first with their distance, and measures their medians", async () => {
     const deps = fakeDeps();
@@ -96,16 +102,18 @@ describe("marketPreview", () => {
     const deps = fakeDeps({ places: { searchText: vi.fn(async () => full) } });
     expect((await marketPreview(clinic, own, ["cleaning"], deps)).capped).toBe(true);
   });
-  it("ignores businesses of another kind when computing the leader", async () => {
+  it("ignores businesses of another kind", async () => {
     const deps = fakeDeps({ places: { searchText: vi.fn(async () => [peer("p_a", 4.8, 310), { ...peer("p_diag", 4.9, 2378), types: ["diagnostic_center", "health"] }]) } });
-    const { stats } = await marketPreview(clinic, own, ["cleaning"], deps);
-    expect(stats.leaderReviewCount).toBe(310);
+    const { stats, nearby } = await marketPreview(clinic, own, ["cleaning"], deps);
+    expect(nearby.map((c) => c.placeId)).toEqual(["p_a"]);
+    expect(stats.nearbyCount).toBe(1);
   });
 });
 
 describe("runQuickScan", () => {
   it("runs the three phases in order and produces hints", async () => {
-    const deps = fakeDeps();
+    const three = [peer("p_a", 4.8, 310), peer("p_b", 4.2, 290), peer("p_c", 4.7, 400)];
+    const deps = fakeDeps({ places: { searchText: vi.fn(async (q: string) => (q.startsWith(clinic.name) ? [own] : three)) } });
     const order: string[] = [];
     const scan = await runQuickScan(clinic, deps, { onPhase: async (p, fn) => { order.push(p); await fn(); } });
     expect(order).toEqual(["validate", "enrich", "understand"]);

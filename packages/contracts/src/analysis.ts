@@ -51,11 +51,24 @@ export const PhaseProgress = z.object({
 });
 export type PhaseProgress = z.infer<typeof PhaseProgress>;
 
+export const HintTone = z.enum(["problem", "strength", "context"]);
+export type HintTone = z.infer<typeof HintTone>;
+
 export const ScanHint = z.object({
   kind: z.enum(["review_gap", "rating_gap", "rating_strength", "no_website", "crowded_market"]),
   text: z.string(),
   /** One line on why it matters. Older scans have none. */
   why: z.string().optional(),
+  /** Something to improve, a strength, or context. Older scans have none; the web derives it from `kind`. */
+  tone: HintTone.optional(),
+  /** The clinic's own figure (reviews or rating) behind the headline. */
+  yours: z.number().optional(),
+  /** The nearby median it is compared with. */
+  nearby: z.number().optional(),
+  /** How many nearby clinics the figure was measured over. */
+  nearbyCount: z.number().int().nonnegative().optional(),
+  /** The count is a floor: the search came back full ("26+"). */
+  atLeast: z.boolean().optional(),
 });
 export type ScanHint = z.infer<typeof ScanHint>;
 

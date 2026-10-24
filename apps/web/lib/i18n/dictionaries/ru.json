@@ -336,5 +336,20 @@
  "Already have an account?": "Уже есть аккаунт?",
  "Password": "Пароль",
  "or continue with email": "или продолжите по эл. почте",
- "Continue": "Продолжить"
+ "Continue": "Продолжить",
+ "What stands out for your clinic": "Что выделяется у вашей клиники",
+ "Measured from your Google profile and the clinics closest to you.": "Измерено по вашему профилю Google и ближайшим к вам клиникам.",
+ "Full report after your plan": "Полный отчёт после выбора плана",
+ "Nothing stood out from the measurements this time. Your full report will go deeper.": "На этот раз измерения ничего не выявили. Полный отчёт рассмотрит всё глубже.",
+ "To improve:": "Улучшить:",
+ "Strength:": "Сильная сторона:",
+ "Context:": "Контекст:",
+ "Your {yours} reviews against a nearby median of {nearby}": "Ваши {yours} отзывов против медианы поблизости в {nearby}",
+ "Your {yours}★ rating against a nearby median of {nearby}★": "Ваш рейтинг {yours}★ против медианы поблизости {nearby}★",
+ "Your {yours}★ rating is at or above the nearby median of {nearby}★": "Ваш рейтинг {yours}★ не ниже медианы поблизости {nearby}★",
+ "No website on your Google profile": "В вашем профиле Google нет сайта",
+ "{count} clinics within 5 km": "{count} клиник в радиусе 5 км",
+ "Measured over the {count} clinics nearest you.": "Измерено по {count} ближайшим к вам клиникам.",
+ "Your full action plan": "Ваш полный план действий",
+ "Your report reads every nearby competitor's reviews and website, then ranks what to fix first.": "Отчёт читает отзывы и сайт каждого конкурента поблизости, затем ранжирует, что исправить первым."
 }

@@ -648,6 +648,23 @@ export const copy = {
       failed: "This step could not finish.",
       retry: "Try again",
     },
+    hints: {
+      title: "What stands out for your clinic",
+      intro: "Measured from your Google profile and the clinics closest to you.",
+      badge: "Full report after your plan",
+      empty: "Nothing stood out from the measurements this time. Your full report will go deeper.",
+      prefix: { problem: "To improve:", strength: "Strength:", context: "Context:" },
+      headline: {
+        review_gap: "Your {yours} reviews against a nearby median of {nearby}",
+        rating_gap: "Your {yours}\u2605 rating against a nearby median of {nearby}\u2605",
+        rating_strength: "Your {yours}\u2605 rating is at or above the nearby median of {nearby}\u2605",
+        no_website: "No website on your Google profile",
+        crowded_market: "{count} clinics within 5 km",
+      },
+      measuredOver: "Measured over the {count} clinics nearest you.",
+      planTitle: "Your full action plan",
+      planText: "Your report reads every nearby competitor's reviews and website, then ranks what to fix first.",
+    },
     found: {
       title: "Here's your market overview",
       intro: "We've read your website, your Google profile and the clinics around you to give you a clear picture of where you stand.",

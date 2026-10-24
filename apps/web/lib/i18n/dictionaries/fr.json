@@ -336,5 +336,20 @@
  "Already have an account?": "Vous avez déjà un compte?",
  "Password": "Mot de passe",
  "or continue with email": "ou continuez par courriel",
- "Continue": "Continuer"
+ "Continue": "Continuer",
+ "What stands out for your clinic": "Ce qui ressort pour votre clinique",
+ "Measured from your Google profile and the clinics closest to you.": "Mesuré à partir de votre profil Google et des cliniques les plus proches de vous.",
+ "Full report after your plan": "Rapport complet après votre forfait",
+ "Nothing stood out from the measurements this time. Your full report will go deeper.": "Rien ne ressort des mesures cette fois-ci. Votre rapport complet ira plus loin.",
+ "To improve:": "À améliorer :",
+ "Strength:": "Point fort :",
+ "Context:": "Contexte :",
+ "Your {yours} reviews against a nearby median of {nearby}": "Vos {yours} avis contre une médiane locale de {nearby}",
+ "Your {yours}★ rating against a nearby median of {nearby}★": "Votre note de {yours}★ contre une médiane locale de {nearby}★",
+ "Your {yours}★ rating is at or above the nearby median of {nearby}★": "Votre note de {yours}★ égale ou dépasse la médiane locale de {nearby}★",
+ "No website on your Google profile": "Aucun site web sur votre profil Google",
+ "{count} clinics within 5 km": "{count} cliniques dans un rayon de 5 km",
+ "Measured over the {count} clinics nearest you.": "Mesuré sur les {count} cliniques les plus proches de vous.",
+ "Your full action plan": "Votre plan d'action complet",
+ "Your report reads every nearby competitor's reviews and website, then ranks what to fix first.": "Votre rapport lit les avis et le site web de chaque concurrent à proximité, puis classe ce qu'il faut corriger en premier."
 }

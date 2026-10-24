@@ -29,7 +29,7 @@ describe("FoundStage: the overview", () => {
   it("lists what stands out with why it matters, tinted by kind, and always the full action plan row", () => {
     render(<FoundStage analysis={analysis} onContinue={vi.fn()} />);
     const section = screen.getByRole("region", { name: /what stands out/i });
-    expect(within(section).getByText(/you have 128 google reviews/i)).toBeInTheDocument();
+    expect(within(section).getByText("Your 128 reviews against a nearby median of 310")).toBeInTheDocument();
     expect(within(section).getByText(/review counts before they book/i)).toBeInTheDocument();
     expect(within(section).getByText("To improve:")).toBeInTheDocument();
     expect(within(section).getByText("Strength:")).toBeInTheDocument();
